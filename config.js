@@ -61,8 +61,8 @@ var config = {
     "api": {
         host: parsedConfig.frontendUri,
         port: parsedConfig.frontendPort,
-        protocol: "https",
-        strictSSL: true,
+        protocol: "http",
+        strictSSL: false,
         timeout: 10000,
         path: {
             submit: {
@@ -101,11 +101,11 @@ var config = {
                 level: 'all'
             }
         },
-        "logLevel": "info", //Default verbosity,
+        "logLevel": "debug", //Default verbosity,
         "maxLines": 30
     }
 };
-
+console.log("Marel101" + JSON.stringify(config))
 // TODO
 /* override for local development if NODE_ENV is defined to local */
 if (process.env.NODE_ENV && (process.env.NODE_ENV.toLowerCase().indexOf("local") !== -1)) {
