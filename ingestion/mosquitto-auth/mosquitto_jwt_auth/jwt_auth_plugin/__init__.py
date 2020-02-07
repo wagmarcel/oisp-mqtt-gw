@@ -30,23 +30,24 @@ from Crypto.Cipher import AES
 #from jwcrypto.common import json_encode
 import sys
 import redis
-import config
+from . import config
 import json
 import base64
+
 
 key_path = config.JWT_PUB_KEY
 gwSecretPath = config.MQTT_GW_SECRET
 
-print >> sys.stderr, "jwt_auth_plugin.py: trying to load public RSA key from: ", key_path
+print("jwt_auth_plugin.py: trying to load public RSA key from: ", key_path, file=sys.stderr)
 if os.path.exists(key_path):
     with open(key_path, 'rb') as f:
         try:
             pubKey = jwk.JWK.from_pem(f.read())
         except:
-            print >> sys.stderr, "jwt_auth_plugin.py: Cannot read ", key_path
+            print("jwt_auth_plugin.py: Cannot read ", key_path, file=sys.stderr)
             sys.exit(1);
 else:
-    print >> sys.stderr, "jwt_auth_plugin.py: Cannot find ", key_path
+    print("jwt_auth_plugin.py: Cannot find ", key_path, file=sys.stderr)
     sys.exit(1)
 
 if os.path.exists(gwSecretPath):
@@ -54,16 +55,16 @@ if os.path.exists(gwSecretPath):
         try:
             bgwSecret = f.read()
         except:
-            print >> sys.stderr, "jwt_auth_plugin.py: Cannot read ", gwSecretPath
+            print("jwt_auth_plugin.py: Cannot read ", gwSecretPath, file=sys.stderr)
             sys.exit(1);
 else:
-    print >> sys.stderr, "jwt_auth_plugin.py: Cannot find ", gwSecretPath
+    print("jwt_auth_plugin.py: Cannot find ", gwSecretPath, file=sys.stderr)
     sys.exit(1)
 
 gwSecret = base64.b64decode(bgwSecret.strip())
-print >> sys.stderr, "jwt_auth_plugin.py: key loaded";
+print("jwt_auth_plugin.py: key loaded", file=sys.stderr)
 
-print >> sys.stderr, "jwt_auth_plugin.py: Superusers:", [superuser for superuser in config.SUPERUSERS]
+print("jwt_auth_plugin.py: Superusers:", [superuser for superuser in config.SUPERUSERS], file=sys.stderr)
 
 #connecting to redis
 r = redis.Redis(host= config.REDIS_IP, port= config.REDIS_PORT)
@@ -74,20 +75,20 @@ def check_user_pass(deviceid, token):
      return 1 on auth success, 0 on auth failure, other value on internal error.
   '''
   try:
-    print >> sys.stderr, "jwt_auth_plugin.py: check_user_pass(deviceid =", deviceid, ", token=<deleted>)"
+    print("jwt_auth_plugin.py: check_user_pass(deviceid =", deviceid, ", token=<deleted>)", file=sys.stderr)
     #
     # first we check if deviceid is special user - SUPERUSER, used by our internal components
     #
     if deviceid in config.SUPERUSERS.keys():
       if token == config.SUPERUSERS[deviceid]:
-         print >> sys.stderr, "jwt_auth_plugin.py: super user authenticated: ", deviceid
+         print("jwt_auth_plugin.py: super user authenticated: ", deviceid, file=sys.stderr)
          return 1 # success
       else:
-         print >> sys.stderr, "jwt_auth_plugin.py: FAILED super user authenticated: ", deviceid
+         print("jwt_auth_plugin.py: FAILED super user authenticated: ", deviceid, file=sys.stderr)
          return 0 # auth failed
 
     if deviceid == '' and token == '':
-      print >> sys.stderr, "jwt_auth_plugin.py: no deviceid nor token - rejected"
+      print("jwt_auth_plugin.py: no deviceid nor token - rejected", file=sys.stderr)
       return 0
 
     #
@@ -97,9 +98,9 @@ def check_user_pass(deviceid, token):
         decoded = jwt.JWT(key = pubKey, jwt = token).claims
         dec = json.loads(decoded)
     except:
-        print >> sys.stderr, "jwt_auth_plugin.py: Token signature is wrong"
+        print("jwt_auth_plugin.py: Token signature is wrong", file=sys.stderr)
         return 0;
-    print >> sys.stderr, "jwt_auth_plugin.py: JWT token is valid (deviceid =", deviceid
+    print("jwt_auth_plugin.py: JWT token is valid (deviceid =", deviceid, file=sys.stderr)
     token_device_id = dec['sub']
     tokenType = dec["type"]
     tokenExp = dec["exp"]
@@ -113,19 +114,19 @@ def check_user_pass(deviceid, token):
     redisToken["iv"] = base64.b64encode(cipher.nonce);
 
     if tokenExp < time.time():
-        print >> sys.stderr, "jwt_auth_plugin.py: Token expired"
+        print("jwt_auth_plugin.py: Token expired", file=sys.stderr)
         return 0
 
     if not tokenType == "device":
-        print >> sys.stderr, "jwt_auth_plugin.py: Not a device token! Rejected."
+        print("jwt_auth_plugin.py: Not a device token! Rejected.", file=sys.stderr)
         return 0
 
     tokenAccount = dec["accounts"][0]["id"]
     if deviceid != token_device_id:
-      print >> sys.stderr, "jwt_auth_plugin.py: Provided deviceid (", deviceid,") is not matching one in token (", token_device_id, ") - will not authenticate!"
+      print("jwt_auth_plugin.py: Provided deviceid (", deviceid,") is not matching one in token (", token_device_id, ") - will not authenticate!", file=sys.stderr)
       return 0 # auth failed
     else:
-      print >> sys.stderr, "jwt_auth_plugin.py: Auth success for DeviceId =", deviceid, "; token_device_id =", token_device_id
+      print("jwt_auth_plugin.py: Auth success for DeviceId =", deviceid, "; token_device_id =", token_device_id, file=sys.stderr)
       redisKey = tokenAccount + "." + deviceid
       r.hset(redisKey, "aid", tokenAccount)
       r.hset(redisKey, "ciphertext", redisToken["ciphertext"])
@@ -134,7 +135,7 @@ def check_user_pass(deviceid, token):
       return 1
     #
   except:
-    print >> sys.stderr, "jwt_auth_plugin.py: Other exception for device id =", deviceid, sys.exc_info()[0]
+    print("jwt_auth_plugin.py: Other exception for device id =", deviceid, sys.exc_info()[0], file=sys.stderr)
     raise # die to track error faster - esp. on not included mongo errors
     return -1 # error!
 
@@ -144,13 +145,13 @@ def topic_acl(topic, deviceid):
      return 1 on OK to access, 0 to deny, other value on internal error.
   '''
   try:
-     print >> sys.stderr, "jwt_auth_plugin.py: topic_acl('", topic, "', '", deviceid, "')"
+     print("jwt_auth_plugin.py: topic_acl('", topic, "', '", deviceid, "')", file=sys.stderr)
 
      #
      # Allow superusers to sub/pub everywhere:
      #
      if deviceid in config.SUPERUSERS.keys():
-       print >> sys.stderr, "jwt_auth_plugin.py: ACL allowed - deviceid is one for superuser!"
+       print("jwt_auth_plugin.py: ACL allowed - deviceid is one for superuser!", file=sys.stderr)
        return 1 # allow
 
      parts = topic.split('/');
@@ -158,7 +159,7 @@ def topic_acl(topic, deviceid):
      aid = parts[2];
      rediskey = aid + "." + deviceid
      if not aid == r.hget(rediskey, "aid"):
-      print >> sys.stderr, "jwt_auth_plugin.py: device not authenticated", deviceid
+      print("jwt_auth_plugin.py: device not authenticated", deviceid, file=sys.stderr)
       return 0 #deny
      #
      # Empty user and health or activation topic - allow
@@ -175,28 +176,28 @@ def topic_acl(topic, deviceid):
             if len(parts) == 4 and parts[0] == "server"  and parts[1] == "metric" and parts[2] == aid and parts[3] == deviceid:
                return 1 # allow
             else:
-                print >> sys.stderr, "jwt_auth_plugin.py: Path does not fit to credentials"
+                print("jwt_auth_plugin.py: Path does not fit to credentials", file=sys.stderr)
                 return 0 # deny
          elif "{accountid}" in allowed_topic:
-            print >> sys.stderr, "jwt_auth_plugin.py: WARNING: another topic with accountID in it. This is unexpected - fix your configuration: ", allowed_topic
+            print("jwt_auth_plugin.py: WARNING: another topic with accountID in it. This is unexpected - fix your configuration: ", allowed_topic, file=sys.stderr)
          else: # any other topic (no accountid assumed)
             expected = allowed_topic.replace("{deviceid}", deviceid)
-            print >> sys.stderr,"this is the expected and topic", expected, topic
+            print("this is the expected and topic", expected, topic, file=sys.stderr)
             if topic == expected:
                return 1 # allow
 
      #
      # if we run out of allowed topics - deny access:
      #
-     print >> sys.stderr, "jwt_auth_plugin.py: ACL check failed for deviceid", deviceid, "- run out of valid topics"
+     print("jwt_auth_plugin.py: ACL check failed for deviceid", deviceid, "- run out of valid topics", file=sys.stderr)
      return 0 # deny
   except:
-     print >> sys.stderr, "jwt_auth_plugin.py: Other exception for device id =", deviceid, sys.exc_info()[0]
+     print("jwt_auth_plugin.py: Other exception for device id =", deviceid, sys.exc_info()[0], file=sys.stderr)
      return -1
 
 
 def selftest():
-     print >> sys.stderr, "jwt_auth_plugin.py: Starting selftest execution"
+     print("jwt_auth_plugin.py: Starting selftest execution", file=sys.stderr)
 
      #
      # prepare test data
@@ -270,9 +271,9 @@ def selftest():
      #assert topic_acl("device/demoacc-power01/", "") == 0
 
      # Success!
-     print >> sys.stderr, "\n\n===========================================\n"
-     print >> sys.stderr,     "|  Testing complete! Working as expected. |"
-     print >> sys.stderr, "\n\n===========================================\n"
+     print("\n\n===========================================\n", file=sys.stderr)
+     print("|  Testing complete! Working as expected. |", file=sys.stderr)
+     print("\n\n===========================================\n", file=sys.stderr)
 #
 # Execute tests if called directly (python __init__.py)
 #

@@ -15,33 +15,34 @@
 # limitations under the License.
 
 
-
+ROOTPATH=/home/marcel/src/platform-launcher/oisp-mqtt-gw/mosquitto
+#ROOTPATH=/app/mosquitto
 echo ""
 echo "============================================"
 echo " start MQTT broker with OISP auth module "
 echo "============================================"
 
-cp /app/mosquitto/mosquitto.conf /app/mosquitto/mosquitto-oisp.conf
+cp ${ROOTPATH}/mosquitto.conf ${ROOTPATH}/mosquitto-oisp.conf
 PORT=$(echo ${OISP_MQTT_BROKER_CONFIG} | jq   '.mqttBrokerPort' | tr -d '"')
 CAFILE=$(echo ${OISP_MQTT_BROKER_CONFIG} | jq   '.cafile' | tr -d '"')
 KEYFILE=$(echo ${OISP_MQTT_BROKER_CONFIG} | jq   '.keyfile' | tr -d '"')
 CERTFILE=$(echo ${OISP_MQTT_BROKER_CONFIG} | jq   '.certfile' | tr -d '"')
 PRODUCTION=false
 echo "PORT $PORT CAFILE $CAFILE KEYFILE $KEYFILE CERTFILE $CERTFILE PRODUCTION $PRODUCTION"
-echo "auth_plugin /app/mosquitto/mosquitto_jwt_auth/jwt_auth_plugin.so" >> /app/mosquitto/mosquitto-oisp.conf
+echo "auth_plugin ${ROOTPATH}/mosquitto_jwt_auth/jwt_auth_plugin.so" >> ${ROOTPATH}/mosquitto-oisp.conf
 
-echo "auth_opt_path /app/mosquitto/mosquitto_jwt_auth/" >> /app/mosquitto/mosquitto-oisp.conf
+echo "auth_opt_path ${ROOTPATH}/mosquitto_jwt_auth" >> ${ROOTPATH}/mosquitto-oisp.conf
 
-echo "port $PORT" >> /app/mosquitto/mosquitto-oisp.conf
+echo "port $PORT" >> ${ROOTPATH}/mosquitto-oisp.conf
 
-echo "cafile $CAFILE" >> /app/mosquitto/mosquitto-oisp.conf
+echo "cafile $CAFILE" >> ${ROOTPATH}/mosquitto-oisp.conf
 
-echo "keyfile $KEYFILE" >> /app/mosquitto/mosquitto-oisp.conf
+echo "keyfile $KEYFILE" >> ${ROOTPATH}/mosquitto-oisp.conf
 
-echo "certfile $CERTFILE" >> /app/mosquitto/mosquitto-oisp.conf
+echo "certfile $CERTFILE" >> ${ROOTPATH}/mosquitto-oisp.conf
 
-echo "tls_version tlsv1.2" >> /app/mosquitto/mosquitto-oisp.conf
+echo "tls_version tlsv1.2" >> ${ROOTPATH}/mosquitto-oisp.conf
 
-echo "require_certificate $PRODUCTION" >> /app/mosquitto/mosquitto-oisp.conf
+echo "require_certificate $PRODUCTION" >> ${ROOTPATH}/mosquitto-oisp.conf
 
-/app/mosquitto/src/mosquitto -c /app/mosquitto/mosquitto-oisp.conf
+${ROOTPATH}/src/mosquitto -c ${ROOTPATH}/mosquitto-oisp.conf

@@ -68,7 +68,7 @@ int mosquitto_auth_plugin_init(void **user_data, struct mosquitto_auth_opt *auth
        }
     }
 
-    PyObject* pName = PyBytes_FromString("jwt_auth_plugin");
+    PyObject* pName = PyUnicode_FromString("jwt_auth_plugin");
     PyObject* pModule = PyImport_Import(pName);
     Py_DECREF(pName);
 
@@ -173,9 +173,9 @@ int mosquitto_auth_acl_check(void *user_data, const char *clientid, const char *
     }
 
     PyObject* pArgs = PyTuple_New(2);
-    PyObject* pyTopic = (topic == NULL) ? PyBytes_FromString("") : PyBytes_FromString(topic);
+    PyObject* pyTopic = (topic == NULL) ? PyUnicode_FromString("") : PyUnicode_FromString(topic);
     PyTuple_SetItem(pArgs, 0, pyTopic);
-    PyObject* pyDeviceId = (username == NULL) ? PyBytes_FromString("") : PyBytes_FromString(username);
+    PyObject* pyDeviceId = (username == NULL) ? PyUnicode_FromString("") : PyUnicode_FromString(username);
     PyTuple_SetItem(pArgs, 1, pyDeviceId);
 
     // call "topic_acl( topic, deviceid )":
@@ -228,9 +228,9 @@ int mosquitto_auth_unpwd_check(void *user_data, const char *username, const char
     }
 
     PyObject* pArgs = PyTuple_New(2);
-    PyObject* pyDeviceId = (username == NULL) ? PyBytes_FromString("") : PyBytes_FromString(username);
+    PyObject* pyDeviceId = (username == NULL) ? PyUnicode_FromString("") : PyUnicode_FromString(username);
     PyTuple_SetItem(pArgs, 0, pyDeviceId);
-    PyObject* pyToken = (password == NULL) ? PyBytes_FromString("") : PyBytes_FromString(password);
+    PyObject* pyToken = (password == NULL) ? PyUnicode_FromString("") : PyUnicode_FromString(password);
     PyTuple_SetItem(pArgs, 1, pyToken);
 
     /* call "check_user_pass( deviceid, token )": */
