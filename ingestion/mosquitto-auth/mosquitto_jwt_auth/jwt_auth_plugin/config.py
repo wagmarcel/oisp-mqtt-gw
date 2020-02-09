@@ -36,8 +36,8 @@ REDIS_PORT = redisConfDict["port"]
 #
 ALLOWED_TOPICS = [
    "server/metric/{accountid}/{deviceid}",
-   "device/{deviceid}/health",
-   "device/{deviceid}/control"
+   "device/health/{accountid}/{deviceid}",
+   "device/control/{accountid}/{deviceid}"
 ]
 
 

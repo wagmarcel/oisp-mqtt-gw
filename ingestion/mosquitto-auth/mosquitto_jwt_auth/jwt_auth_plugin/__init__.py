@@ -1,4 +1,4 @@
-﻿# Copyright (c) 2017 Intel Corporation
+﻿# Copyright (c) 2017-2020 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,10 +33,17 @@ import redis
 from . import config
 import json
 import base64
+from keycloak import KeycloakOpenID
 
 
 key_path = config.JWT_PUB_KEY
 gwSecretPath = config.MQTT_GW_SECRET
+
+keycloak_openid = KeycloakOpenID(server_url="http://keycloak-http:4080/keycloak/",
+                    client_id="mqtt-broker",
+                    realm_name="OISP",
+                    client_secret_key="a8623952-752e-4289-b272-8b21d7b24bb")
+certs = keycloak_openid.certs()
 
 print("jwt_auth_plugin.py: trying to load public RSA key from: ", key_path, file=sys.stderr)
 if os.path.exists(key_path):
@@ -95,27 +102,14 @@ def check_user_pass(deviceid, token):
     # device+token flow - verify JWT and match device id in username and in token
     #
     try:
-        decoded = jwt.JWT(key = pubKey, jwt = token).claims
-        dec = json.loads(decoded)
+        options = {"verify_signature": True, "verify_aud": True, "exp": True}
+        dec = keycloak_openid.decode_token(token, key=certs, options=options)
     except:
         print("jwt_auth_plugin.py: Token signature is wrong", file=sys.stderr)
         return 0;
     print("jwt_auth_plugin.py: JWT token is valid (deviceid =", deviceid, file=sys.stderr)
     token_device_id = dec['sub']
     tokenType = dec["type"]
-    tokenExp = dec["exp"]
-
-    #encrypt
-    cipher = AES.new(gwSecret, AES.MODE_GCM)
-    ciphertext, tag = cipher.encrypt_and_digest(token)
-    redisToken = dict();
-    redisToken["ciphertext"] = base64.b64encode(ciphertext);
-    redisToken["tag"] = base64.b64encode(tag);
-    redisToken["iv"] = base64.b64encode(cipher.nonce);
-
-    if tokenExp < time.time():
-        print("jwt_auth_plugin.py: Token expired", file=sys.stderr)
-        return 0
 
     if not tokenType == "device":
         print("jwt_auth_plugin.py: Not a device token! Rejected.", file=sys.stderr)
@@ -129,71 +123,65 @@ def check_user_pass(deviceid, token):
       print("jwt_auth_plugin.py: Auth success for DeviceId =", deviceid, "; token_device_id =", token_device_id, file=sys.stderr)
       redisKey = tokenAccount + "." + deviceid
       r.hset(redisKey, "aid", tokenAccount)
-      r.hset(redisKey, "ciphertext", redisToken["ciphertext"])
-      r.hset(redisKey, "tag", redisToken["tag"])
-      r.hset(redisKey, "iv", redisToken["iv"])
       return 1
-    #
+
   except:
     print("jwt_auth_plugin.py: Other exception for device id =", deviceid, sys.exc_info()[0], file=sys.stderr)
     raise # die to track error faster - esp. on not included mongo errors
     return -1 # error!
 
 def topic_acl(topic, deviceid):
-  '''
-     string topic, string deviceid
-     return 1 on OK to access, 0 to deny, other value on internal error.
-  '''
-  try:
-     print("jwt_auth_plugin.py: topic_acl('", topic, "', '", deviceid, "')", file=sys.stderr)
+    '''
+        string topic, string deviceid
+        return 1 on OK to access, 0 to deny, other value on internal error.
+    '''
+    try:
+        print("jwt_auth_plugin.py: topic_acl('", topic, "', '", deviceid, "')", file=sys.stderr)
 
-     #
-     # Allow superusers to sub/pub everywhere:
-     #
-     if deviceid in config.SUPERUSERS.keys():
-       print("jwt_auth_plugin.py: ACL allowed - deviceid is one for superuser!", file=sys.stderr)
-       return 1 # allow
+        #
+        # Allow superusers to sub/pub everywhere:
+        #
+        if deviceid in config.SUPERUSERS.keys():
+            print("jwt_auth_plugin.py: ACL allowed - deviceid is one for superuser!", file=sys.stderr)
+            return 1 # allow
 
-     parts = topic.split('/');
-     #aid = r.hget(deviceid, "aid")
-     aid = parts[2];
-     rediskey = aid + "." + deviceid
-     if not aid == r.hget(rediskey, "aid"):
-      print("jwt_auth_plugin.py: device not authenticated", deviceid, file=sys.stderr)
-      return 0 #deny
-     #
-     # Empty user and health or activation topic - allow
-     #
-     #
-     # Match topic against allowed topics:
-     #
-     for allowed_topic in config.ALLOWED_TOPICS:
-         # special case for topic with accountid inside:
-         if allowed_topic.startswith("server/metric/{accountid}/{deviceid}"):
-            if not topic.startswith("server/metric/"):
-              continue;
-            parts = topic.split('/')
-            if len(parts) == 4 and parts[0] == "server"  and parts[1] == "metric" and parts[2] == aid and parts[3] == deviceid:
-               return 1 # allow
-            else:
-                print("jwt_auth_plugin.py: Path does not fit to credentials", file=sys.stderr)
-                return 0 # deny
-         elif "{accountid}" in allowed_topic:
-            print("jwt_auth_plugin.py: WARNING: another topic with accountID in it. This is unexpected - fix your configuration: ", allowed_topic, file=sys.stderr)
-         else: # any other topic (no accountid assumed)
-            expected = allowed_topic.replace("{deviceid}", deviceid)
-            print("this is the expected and topic", expected, topic, file=sys.stderr)
-            if topic == expected:
-               return 1 # allow
+        #
+        # Empty user and health or activation topic - allow
+        #
+        #
+        # Match topic against allowed topics:
+        #
+        parts = topic.split('/')
+        aid = parts[2]
+        rediskey = aid + "." + deviceid
+        aid_redis = r.hget(rediskey, "aid");
+        if aid_redis is None: # account+deviceid not in redis => never authenticated
+            print("jwt_auth_plugin.py: device not authenticated for the topic", deviceid, file=sys.stderr)
+            return 0 #deny
+        for allowed_topic in config.ALLOWED_TOPICS:
+            # special case for topic with accountid inside:
+            if allowed_topic.startswith("server/metric/{accountid}/{deviceid}"):
+                if not topic.startswith("server/metric/"):
+                    continue;
 
-     #
-     # if we run out of allowed topics - deny access:
-     #
-     print("jwt_auth_plugin.py: ACL check failed for deviceid", deviceid, "- run out of valid topics", file=sys.stderr)
-     return 0 # deny
-  except:
-     print("jwt_auth_plugin.py: Other exception for device id =", deviceid, sys.exc_info()[0], file=sys.stderr)
-     return -1
+                if len(parts) == 4 and parts[0] == "server"  and parts[1] == "metric" and parts[2] == aid and parts[3] == deviceid:
+                    return 1 # allow
+                else:
+                    print("jwt_auth_plugin.py: Path does not fit to credentials", file=sys.stderr)
+                    return 0 # deny
+            elif allowed_topic.startswith("device/health"): # any other topic (no accountid assumed)
+                expected = allowed_topic.replace("{deviceid}", deviceid).replace("{account}", aid_redis)
+                print("this is the expected topic and found topic", expected, topic, file=sys.stderr)
+                if topic == expected:
+                    return 1 # allow
+        #
+        # if we run out of allowed topics - deny access:
+        #
+        print("jwt_auth_plugin.py: ACL check failed for deviceid", deviceid, "- run out of valid topics", file=sys.stderr)
+        return 0 # deny
+    except Exception as e:
+        print("jwt_auth_plugin.py: Other exception for device id =", deviceid, str(e), sys.exc_info()[0], file=sys.stderr)
+        return -1
 
 
 def selftest():
