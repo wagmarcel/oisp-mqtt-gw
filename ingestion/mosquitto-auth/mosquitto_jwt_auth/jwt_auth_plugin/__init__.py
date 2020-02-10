@@ -23,6 +23,7 @@
    required files in this script's directory: pub_jwt_key.pem, config.py
 '''
 
+print("Marcel193 start!!!!!!!")
 import os
 import time
 from jwcrypto import jwk,jwt
@@ -39,10 +40,11 @@ from keycloak import KeycloakOpenID
 key_path = config.JWT_PUB_KEY
 gwSecretPath = config.MQTT_GW_SECRET
 
-keycloak_openid = KeycloakOpenID(server_url="http://keycloak-http:4080/keycloak/",
-                    client_id="mqtt-broker",
-                    realm_name="OISP",
-                    client_secret_key="a8623952-752e-4289-b272-8b21d7b24bb")
+print("Marcel142 " + str(keycloakConfDict))
+keycloak_openid = KeycloakOpenID(server_url=keycloakConfDict["auth-server-url"],
+                    client_id=keycloakConfDict["mqtt-broker-id"],
+                    realm_name=keycloakConfDict["realm"],
+                    client_secret_key=keycloakConfDict["mqtt-broker-secret"])
 certs = keycloak_openid.certs()
 
 print("jwt_auth_plugin.py: trying to load public RSA key from: ", key_path, file=sys.stderr)
