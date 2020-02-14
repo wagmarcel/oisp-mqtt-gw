@@ -51,40 +51,44 @@ module.exports = function(logger) {
     */
     me.token = null;
     var getDidAndDataType = function(item) {
+        var cid = item.componentId;
         return new Promise((resolve, reject) => {
             //check whether cid = uuid
-            var cid = item.componentId;
             if (!uuidValidate(cid)) {
                 reject("cid not UUID. Rejected!");
             }
             redisClient.hgetall(cid, function(err, value) {
                 if (err) {
                     throw err;
-                  }
-                if (value == null) {
-                    // no cached value found => make db lookup and store in cache
-                    var sqlquery='SELECT devices.id,"dataType" FROM dashboard.device_components,dashboard.devices,dashboard.component_types WHERE "componentId"::text=\''
-                    + cid
-                    + '\' and "deviceUID"::text=devices.uid::text and device_components."componentTypeId"::text=component_types.id::text'
-                    sequelize.query(sqlquery, { type: QueryTypes.SELECT })
-                    .then((didAndDataType) => {
-                        if (didAndDataType == undefined || didAndDataType == null) {
-                              reject("DB lookup failed!")
-                        }
-                        if (redisClient.hmset(cid, didAndDataType[0])) {
-                            didAndDataType[0].dataElement = item;
-                            resolve(didAndDataType[0]);
-                        } else {
-                            me.logger.warn("Could not store db value in redis. This will significantly reduce performance");
-                            didAndDataType[0].dataElement = item;
-                            resolve(didAndDataType[0])
-                        }
-                    })
                 } else {
-                    resolve(value);
+                  resolve(value)
                 }
-            });
+            })
         })
+        .then( (value) => {
+              if (value === null || (Array.isArray(value) && value.length == 1 && value[0] == null)) {
+                  // no cached value found => make db lookup and store in cache
+                  var sqlquery='SELECT devices.id,"dataType" FROM dashboard.device_components,dashboard.devices,dashboard.component_types WHERE "componentId"::text=\'' + cid + '\' and "deviceUID"::text=devices.uid::text and device_components."componentTypeId"::text=component_types.id::text'
+                   return sequelize.query(sqlquery, { type: QueryTypes.SELECT })
+              } else {
+                  return [value];
+              }
+          })
+          .then((didAndDataType) => new Promise((resolve, reject) => {
+              if (didAndDataType == undefined || didAndDataType == null) {
+                  reject("DB lookup failed!");
+                  return;
+              }
+              var redisResult = redisClient.hmset(cid, "id", didAndDataType[0].id, "dataType", didAndDataType[0].dataType);
+              didAndDataType[0].dataElement = item;
+              if (redisResult) {
+                  resolve(didAndDataType[0]);
+              } else {
+                  me.logger.warn("Could not store db value in redis. This will significantly reduce performance");
+                  resolve(didAndDataType[0])
+              }
+          }))
+          .catch(err => reject(err));
     }
 
     producer.on('error', function (err) {
@@ -165,18 +169,6 @@ module.exports = function(logger) {
             .catch(function(err) {
               me.logger.warn("Could not send data to Kafka");
             });
-
-
-            /*me.logger.debug("Matching topic: " + match);
-            var kafkaMessage =
-            var payloads = [
-
-              {topic: kafka.metricsTopic, messages: "hello "}
-            ]
-            console.log("Marcel881 " + JSON.stringify(kafkaMessage));
-
-          }*/
-
         };
     }
     me.connectTopics = function() {
