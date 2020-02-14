@@ -27,10 +27,8 @@ MQTT_GW_SECRET = oispConfDict["aesKey"]
 REDIS_IP = redisConfDict["hostname"]
 REDIS_PORT = redisConfDict["port"]
 
-print("Marcel533 - before environ")
 keycloakConf = os.environ["OISP_KEYCLOAK_CONFIG"]
 keycloakConfDict = json.loads(keycloakConf)
-print("Marcel534 - after environ")
 
 
 #

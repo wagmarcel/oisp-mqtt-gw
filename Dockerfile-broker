@@ -23,6 +23,7 @@ RUN tar -xvzf mosquitto-1.4.15.tar.gz -C mosquitto --strip-components 1
 
 ADD /ingestion/mosquitto-auth /app/mosquitto
 ADD start-broker.sh /app
+ADD wait-for-it.sh /app
 
 WORKDIR /app/mosquitto
 

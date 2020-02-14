@@ -52,6 +52,17 @@ var config = {
         "host": parsedConfig.redisConf.hostname,
         "port": parsedConfig.redisConf.port
     },
+    "kafka": {
+      "host": parsedConfig.kafkaConfig.uri,
+      "metricsTopic": parsedConfig.kafkaConfig.topicsObservations
+    },
+    "postgres": {
+      "host": parsedConfig.postgresConfig.hostname,
+      "dbname": parsedConfig.postgresConfig.dbname,
+      "port": parsedConfig.postgresConfig.port,
+      "username": parsedConfig.postgresConfig.username,
+      "password": parsedConfig.postgresConfig.password
+    },
     "topics": {
         "subscribe": {
             "data_ingestion": "server/metric/+/+",
