@@ -15,8 +15,7 @@
 # limitations under the License.
 
 
-ROOTPATH=/home/marcel/src/platform-launcher/oisp-mqtt-gw/mosquitto
-#ROOTPATH=/app/mosquitto
+ROOTPATH=/app/mosquitto
 echo ""
 echo "============================================"
 echo " start MQTT broker with OISP auth module "
