@@ -22,9 +22,7 @@ var devices = require('../api/iot.devices');
 var config = require("../config");
 var util = require("../lib/common").time;
 var topics_subscribe = config.topics.subscribe;
-var kafka = require('kafka-node');
-const client = new kafka.KafkaClient({kafkaHost: config.kafka.host});
-var producer = new kafka.Producer(client);
+var { Kafka, logLevel } = require('kafkajs');
 var dataSchema = require("../lib/schemas/data.json");
 var Validator = require('jsonschema').Validator;
 var validator = new Validator();
@@ -44,12 +42,34 @@ const sequelize = new Sequelize(config.postgres.dbname, config.postgres.username
 module.exports = function(logger) {
     var me = this;
     me.logger = logger;
-    /**
-     * @descritpion xxxxxxx
-     * @param topic: it is the MQTT topic subscribe, the topic has device id in between
-     * @param message: the message contain the code require to ask for authorization token.
-    */
     me.token = null;
+
+    var kafkaProducer;
+    var brokers = config.kafka.uri.split(',');
+    try {
+        const kafka = new Kafka({
+            logLevel: logLevel.INFO,
+            brokers: brokers,
+            clientId: 'frontend-metrics',
+            requestTimeout: config.kafka.requestTimeout,
+            retry: {
+                maxRetryTime: config.kafka.maxRetryTime,
+                retries: config.kafka.retries
+            }
+        });
+        kafkaProducer = kafka.producer();
+        const { CONNECT, DISCONNECT } = kafkaProducer.events;
+        kafkaProducer.on(DISCONNECT, e => {
+            console.log(`Metric producer disconnected!: ${e.timestamp}`);
+            kafkaProducer.connect();
+        });
+        kafkaProducer.on(CONNECT, e => logger.debug("Kafka metric producer connected: " + e));
+        kafkaProducer.connect();
+      } catch(e) {
+          logger.error("Exception occured while creating Kafka Producer: " + exception);
+      }
+
+
     var getDidAndDataType = function(item) {
         var cid = item.componentId;
         return new Promise((resolve, reject) => {
@@ -150,24 +170,23 @@ module.exports = function(logger) {
             );
             Promise.all(promarray)
             .then(values => {
-                var promarray = [];
-                values.forEach(item => {
-                    promarray.push(new Promise((resolve, reject) => {
-                        var kafkaMessage = me.prepareKafkaPayload(item, accountId);
-                          var payloads = [
-                              {topic: config.kafka.metricsTopic, messages: JSON.stringify(kafkaMessage)}
-                          ]
-                          producer.send(payloads, function (err, data) {
-                              if (err) {
-                                  throw err;
-                              }
-                          });
-                    }))
+                var promarray =values.map(item => {
+                    var kafkaMessage = me.prepareKafkaPayload(item, accountId);
+                    var messages = [{key: accountId, value: JSON.stringify(kafkaMessage)}];
+                      var payloads = [{
+                              topic: config.kafka.metricsTopic,
+                              messages: JSON.stringify(kafkaMessage)
+                      }];
+                      return producer.send(payloads)
+                          .catch((err) => {
+                              return me.logger.error("Could not send message to Kafka: " + err);
+                            }
+                          )
                 });
-                return Promise.all(promarray);
             })
+            .then((promarray) => Promise.all(promarray))
             .catch(function(err) {
-              me.logger.warn("Could not send data to Kafka");
+              me.logger.warn("Could not send data to Kafka " + err);
             });
         };
     }
