@@ -55,10 +55,10 @@ var config = {
     "kafka": {
       "host": parsedConfig.kafkaConfig.uri,
       "metricsTopic": parsedConfig.kafkaConfig.topicsObservations,
-      "replication": kafka_config.replication,
-      "requestTimeout": kafka_config.requestTimeout,
-      "maxRetryTime": kafka_config.maxRetryTime,
-      "retries": kafka_config.retries
+      "replication": parsedConfig.kafkaConfig.replication,
+      "requestTimeout": parsedConfig.kafkaConfig.requestTimeout,
+      "maxRetryTime": parsedConfig.kafkaConfig.maxRetryTime,
+      "retries": parsedConfig.kafkaConfig.retries
     },
     "postgres": {
       "host": parsedConfig.postgresConfig.hostname,

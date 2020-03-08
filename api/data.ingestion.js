@@ -45,7 +45,7 @@ module.exports = function(logger) {
     me.token = null;
 
     var kafkaProducer;
-    var brokers = config.kafka.uri.split(',');
+    var brokers = config.kafka.host.split(',');
     try {
         const kafka = new Kafka({
             logLevel: logLevel.INFO,
@@ -111,9 +111,6 @@ module.exports = function(logger) {
           .catch(err => reject(err));
     }
 
-    producer.on('error', function (err) {
-      me.logger.info("Error in Kafka connection: " + err)
-    })
     redisClient.on("error", function(err) {
       me.logger.info("Error in Redis client: " + err);
     });
@@ -173,11 +170,11 @@ module.exports = function(logger) {
                 var promarray =values.map(item => {
                     var kafkaMessage = me.prepareKafkaPayload(item, accountId);
                     var messages = [{key: accountId, value: JSON.stringify(kafkaMessage)}];
-                      var payloads = [{
+                      var payloads = {
                               topic: config.kafka.metricsTopic,
-                              messages: JSON.stringify(kafkaMessage)
-                      }];
-                      return producer.send(payloads)
+                              messages
+                      };
+                      return kafkaProducer.send(payloads)
                           .catch((err) => {
                               return me.logger.error("Could not send message to Kafka: " + err);
                             }
