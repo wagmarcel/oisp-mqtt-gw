@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-ROOTPATH=$PWD/mosquitto
+ROOTPATH=/app/mosquitto
 echo ""
 echo "============================================"
 echo " start MQTT broker with OISP auth module "
