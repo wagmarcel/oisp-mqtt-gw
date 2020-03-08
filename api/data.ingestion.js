@@ -17,10 +17,7 @@
 
 
 "use strict";
-const fs = require('fs');
-var devices = require('../api/iot.devices');
 var config = require("../config");
-var util = require("../lib/common").time;
 var topics_subscribe = config.topics.subscribe;
 var { Kafka, logLevel } = require('kafkajs');
 var dataSchema = require("../lib/schemas/data.json");
@@ -66,7 +63,7 @@ module.exports = function(logger) {
         kafkaProducer.on(CONNECT, e => logger.debug("Kafka metric producer connected: " + e));
         kafkaProducer.connect();
       } catch(e) {
-          logger.error("Exception occured while creating Kafka Producer: " + exception);
+          logger.error("Exception occured while creating Kafka Producer: " + e);
       }
 
 
@@ -81,21 +78,21 @@ module.exports = function(logger) {
                 if (err) {
                     throw err;
                 } else {
-                  resolve(value)
+                  resolve(value);
                 }
-            })
+            });
         })
         .then( (value) => {
-              if (value === null || (Array.isArray(value) && value.length == 1 && value[0] == null)) {
+              if (value === null || (Array.isArray(value) && value.length === 1 && value[0] === null)) {
                   // no cached value found => make db lookup and store in cache
-                  var sqlquery='SELECT devices.id,"dataType" FROM dashboard.device_components,dashboard.devices,dashboard.component_types WHERE "componentId"::text=\'' + cid + '\' and "deviceUID"::text=devices.uid::text and device_components."componentTypeId"::text=component_types.id::text'
-                   return sequelize.query(sqlquery, { type: QueryTypes.SELECT })
+                  var sqlquery='SELECT devices.id,"dataType" FROM dashboard.device_components,dashboard.devices,dashboard.component_types WHERE "componentId"::text=\'' + cid + '\' and "deviceUID"::text=devices.uid::text and device_components."componentTypeId"::text=component_types.id::text';
+                   return sequelize.query(sqlquery, { type: QueryTypes.SELECT });
               } else {
                   return [value];
               }
           })
           .then((didAndDataType) => new Promise((resolve, reject) => {
-              if (didAndDataType == undefined || didAndDataType == null) {
+              if (didAndDataType === undefined || didAndDataType === null) {
                   reject("DB lookup failed!");
                   return;
               }
@@ -105,11 +102,11 @@ module.exports = function(logger) {
                   resolve(didAndDataType[0]);
               } else {
                   me.logger.warn("Could not store db value in redis. This will significantly reduce performance");
-                  resolve(didAndDataType[0])
+                  resolve(didAndDataType[0]);
               }
           }))
-          .catch(err => reject(err));
-    }
+          .catch(err => me.logger.error("Could not send message to Kafka: " + err));
+    };
 
     redisClient.on("error", function(err) {
       me.logger.info("Error in Redis client: " + err);
@@ -123,9 +120,10 @@ module.exports = function(logger) {
     }
 
     me.getToken = function (did) {
+        /*jshint unused:false*/
         return new Promise(function(resolve, reject) {
           resolve(null);
-        })
+        });
     };
     me.processDataIngestion = function (topic, message) {
         /*
@@ -150,7 +148,6 @@ module.exports = function(logger) {
           //Check: Does accountid fit to topic?
             var match = topic.match(/server\/metric\/([^\/]*)\/(.*)/);
             var accountId = match[1];
-            var deviceId =  match[0];
 
             if (accountId !== match[1]) {
                 me.logger.info("AccountId in message does not fit to topic! Message will be discarded: " + bodyMessage);
@@ -161,13 +158,13 @@ module.exports = function(logger) {
             // Also retrieve dataType
             var promarray = [];
             bodyMessage.data.forEach(item => {
-                var value = getDidAndDataType(item)
+                var value = getDidAndDataType(item);
                 promarray.push(value);
               }
             );
             Promise.all(promarray)
             .then(values => {
-                var promarray =values.map(item => {
+                values.map(item => {
                     var kafkaMessage = me.prepareKafkaPayload(item, accountId);
                     var messages = [{key: accountId, value: JSON.stringify(kafkaMessage)}];
                       var payloads = {
@@ -178,15 +175,15 @@ module.exports = function(logger) {
                           .catch((err) => {
                               return me.logger.error("Could not send message to Kafka: " + err);
                             }
-                          )
+                          );
                 });
             })
             .then((promarray) => Promise.all(promarray))
             .catch(function(err) {
               me.logger.warn("Could not send data to Kafka " + err);
             });
-        };
-    }
+        }
+    };
     me.connectTopics = function() {
         me.broker.bind(topics_subscribe.data_ingestion, me.processDataIngestion);
         return true;
@@ -244,4 +241,4 @@ module.exports = function(logger) {
 
         return msg;
     };
-}
+};
