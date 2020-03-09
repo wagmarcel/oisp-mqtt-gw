@@ -22,7 +22,7 @@ echo " OISP Authorization Gateway "
 echo "============================================"
 
 
-node --inspect ./app.js
+node ./app.js
 
 echo "done"
 echo ""

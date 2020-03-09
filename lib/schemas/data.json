@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "properties": {
+      "accountId": {
+          "type": "string",
+          "required": true
+      },
+      "on": {
+          "type": "number",
+          "required": true
+      },
+      "data": {
+          "type": "array",
+          "required": true,
+          "minItems": 1,
+          "maxItems": 1024,
+          "items": {
+              "properties": {
+                  "componentId": {
+                      "type": "string",
+                      "required": true
+                  },
+                  "on": {
+                      "type": "number",
+                      "required": true
+                  },
+                  "loc": {
+                      "type": "array",
+                      "required": false,
+                      "minItems": 2,
+                      "maxItems": 3,
+                      "items": {
+                          "type" : "number"
+                      }
+                  },
+                  "value": {
+                      "type": ["number", "string", "boolean"],
+                      "required": true
+                  },
+                  "attributes": {
+                      "type":"object",
+                      "required": false
+                  }
+              },
+              "additionalProperties": false
+          }
+      }
+  },
+  "additionalProperties": false
+}
