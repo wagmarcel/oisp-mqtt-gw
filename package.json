@@ -46,7 +46,7 @@
     "istanbul": "^0.2.7",
     "rewire": "^2.0.0",
     "grunt-cli": "^0.1.13",
-    "grunt-contrib-jshint": "^0.10.0",
+    "grunt-contrib-jshint": "^0.12.0",
     "mocha-teamcity-reporter": "0.0.2",
     "jshint-teamcity": "^1.0.4",
     "asserts": "^4.0.0",
