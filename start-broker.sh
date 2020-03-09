@@ -15,18 +15,21 @@
 # limitations under the License.
 
 
-echo "============================================================="
-echo " start waitforit => should be done on platform-launcher layer"
-echo " but for the time being executed here as well                "
-echo "============================================================="
+if [ "$1" != "skip" ]; then
+  echo "============================================================="
+  echo " start waitforit => should be done on platform-launcher layer"
+  echo " but for the time being executed here as well                "
+  echo "============================================================="
 
-REDIS=$(echo ${OISP_REDIS_CONFIG} | jq   '.hostname' | tr -d '"')
-REDISPORT=$(echo ${OISP_REDIS_CONFIG} | jq   '.port' | tr -d '"')
-KEYCLOAK=$(echo ${OISP_KEYCLOAK_CONFIG} | jq   '.auth-server-url' | tr -d '"')
-KEYCLOAKPORT=$(echo ${OISP_KEYCLOAK_CONFIG} | jq   '.listener-port' | tr -d '"')
-/app/wait-for-it.sh ${REDIS}:${REDISPORT} -t 300 -- /app/wait-for-it.sh ${KEYCLOAK}:${KEYCLOAKPORT} -t 300 -- /app/start-broker.sh
-exit 0
-
+  REDIS=$(echo ${OISP_REDIS_CONFIG} | jq '.hostname' | tr -d '"')
+  REDISPORT=$(echo ${OISP_REDIS_CONFIG} | jq '.port' | tr -d '"')
+  KEYCLOAK=$(echo ${OISP_KEYCLOAK_CONFIG} | jq '.["auth-server-url"]' | tr -d '"')
+  KEYCLOAK=${KEYCLOAK/http:\/\//}
+  KEYCLOAK=${KEYCLOAK//\/keycloak/}
+  echo /app/wait-for-it.sh ${REDIS}:${REDISPORT} -t 300 -- /app/wait-for-it.sh ${KEYCLOAK} -t 300 -- /app/start-broker.sh skip
+  /app/wait-for-it.sh ${REDIS}:${REDISPORT} -t 300 -- /app/wait-for-it.sh ${KEYCLOAK} -t 300 -- /app/start-broker.sh skip
+  exit 0
+fi
 
 echo "============================================"
 echo " start MQTT broker with OISP auth module "
