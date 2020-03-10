@@ -36,12 +36,6 @@ brokerConnector.connect(function(err) {
         health.init(brokerConnector);
     } else {
         logger.error("Error on Broker connection ", err);
+        process.exit(1);
     }
-});
-
-
-process.on("uncaughtException", function(err) {
-    logger.error("UncaughtException:" + err.message);
-    logger.debug(err.stack);
-    process.exit(1);
 });
