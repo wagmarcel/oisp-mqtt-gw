@@ -20,6 +20,7 @@ var Broker = require("./lib/mqtt/connector"),
     ApiData = require('./api/data.ingestion'),
     config = require("./config"),
     logger = require("./lib/logger").init(config),
+    authServicce = require("./lib/authService").init(config),
     health = require('./lib/health');
 
 logger.info("OISP MQTT-gateway authorization agent");
