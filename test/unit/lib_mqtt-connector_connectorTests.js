@@ -119,17 +119,18 @@ describe(fileToTest, function(){
             id = "0a-03-12-22";
         var myBroker = toTest.singleton(config, logger);
         var client = new mqtt.MqttClient();
-        mqtt.createSecureClient = function (port, host, args ) {
+        mqtt.connect = function (url, options ) {
             client.connected = false;
             throw new Error("Invalid Command");
             return client;
         };
+        
         myBroker.connect(function(err) {
-            assert.instanceOf(err, Error, "Shallbe an error Returned");
+            assert.instanceOf(err, Error, "An error shall be returned");
             done();
         });
     });
-    it('Shall Retries to Connect to Specific Broker >', function(done){
+    it('Shall wait to Connect to Specific Broker >', function(done){
         toTest.__set__("mqtt", mqtt);
 
         var config = {
@@ -143,10 +144,11 @@ describe(fileToTest, function(){
         var myBroker = toTest.singleton(config, logger);
         var client = new mqtt.MqttClient();
 
-        mqtt.createSecureClient = function (port, host, args ) {
-            assert.lengthOf(arguments, 3, "Missing Argument for Secure Connection");
-            assert.equal(port, config.port, "The port has override");
-            assert.equal(host, config.host, "The host has override");
+        mqtt.connect = function (url, options ) {
+            assert.lengthOf(arguments, 2, "Missing Argument for Secure Connection");
+            assert.equal(options.username, config.username, "The port has override");
+            assert.equal(options.password, config.password, "The host has override");
+            assert.equal(url, "mqtts://" + config.host + ":" + config.port)
             client.connected = false;
             return client;
         };
@@ -159,7 +161,7 @@ describe(fileToTest, function(){
 
         setTimeout(function(){
            client.connected = true;
-        }, 1000);
+        }, 2000);
 
 
     });
@@ -174,10 +176,11 @@ describe(fileToTest, function(){
             id = "0a-03-12-22";
         var myBroker = toTest.singleton(config, logger);
         var client = new mqtt.MqttClient();
-        mqtt.createSecureClient = function (port, host, args ) {
-            assert.lengthOf(arguments, 3, "Missing Argument for Secure Connection");
-            assert.equal(port, config.port, "The port has override");
-            assert.equal(host, config.host, "The host has override");
+        mqtt.connect = function (url, options ) {
+            assert.lengthOf(arguments, 2, "Missing Argument for Secure Connection");
+            assert.equal(options.username, config.username, "The port has override");
+            assert.equal(options.password, config.password, "The host has override");
+            assert.equal(url, "mqtts://" + config.host + ":" + config.port)
             client.connected = false;
             return client;
         };
