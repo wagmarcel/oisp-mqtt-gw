@@ -40,7 +40,7 @@ describe(fileToTest, function(){
 
                         }
                         this.on = function(){};
-                 }
+                 },
             };
     var logger  = {
         info : function(){},
@@ -56,21 +56,25 @@ describe(fileToTest, function(){
     });
     it('Shall Connect to Specific Broker using None Secure Connection >', function(done){
         toTest.__set__("mqtt", mqtt);
-
+        var username = "username";
+        var password = "password";
         var config = {
                 host: "myHosttest",
                 port: 9090909,
                 secure: false,
-                retries: 2
+                retries: 2,
+                username: username,
+                password: password
             },
             id = "0a-03-12-22";
 
         var myBroker = toTest.singleton(config, logger);
         var client = new mqtt.MqttClient();
-        mqtt.createClient = function (port, host ) {
-            assert.lengthOf(arguments, 3, "Missing Argument for Secure Connection");
-            assert.equal(port, config.port, "The port has override");
-            assert.equal(host, config.host, "The host has override");
+        mqtt.connect = function (url, options ) {
+            assert.lengthOf(arguments, 2, "Missing Argument for Secure Connection");
+            assert.equal(options.username, config.username, "The port has override");
+            assert.equal(options.password, config.password, "The host has override");
+            assert.equal(url, "mqtt://" + config.host + ":" + config.port)
             client.connected = true;
             return client;
         };
@@ -91,10 +95,11 @@ describe(fileToTest, function(){
             id = "0a-03-12-22";
         var myBroker = toTest.singleton(config, logger);
         var client = new mqtt.MqttClient();
-        mqtt.createSecureClient = function (port, host, args ) {
-            assert.lengthOf(arguments, 3, "Missing Argument for Secure Connection");
-            assert.equal(port, config.port, "The port has override");
-            assert.equal(host, config.host, "The host has override");
+        mqtt.connect = function (url, options ) {
+            assert.lengthOf(arguments, 2, "Missing Argument for Secure Connection");
+            assert.equal(options.username, config.username, "The port has override");
+            assert.equal(options.password, config.password, "The host has override");
+            assert.equal(url, "mqtts://" + config.host + ":" + config.port)
             client.connected = true;
             return client;
         };
