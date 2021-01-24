@@ -60,7 +60,19 @@ module.exports = function(grunt) {
           src: ['<%= dirs.jsfiles %>'],
 
         },
+        mochaTest: {
+          test: {
+              options: {
+                  reporter: 'spec',
+                  clearRequireCache: true
+              },
+              src: ['test/unit/*.js']
+          },
+      }
 
 		    });
     grunt.loadNpmTasks('grunt-contrib-jshint');
+    grunt.loadNpmTasks('grunt-mocha-test');
+    grunt.registerTask('default', ['jshint', 'test']);
+    grunt.registerTask('tests', ['mochaTest']);
 };
