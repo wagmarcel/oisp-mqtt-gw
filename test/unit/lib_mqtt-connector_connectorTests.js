@@ -32,12 +32,14 @@ describe(fileToTest, function(){
                         this.subscribe = function (topic, option, callback) {
                             return callback(null, [{"topic": topic, "qos":0}]);
                         };
-                        this.publish = function (topic, message, callback) {
+                        this.publish = function (topic, message) {
                             console.log("Publishing Topic ", topic);
-
                         };
                         this.unsubscribe = function (topic) {
 
+                        }
+                        this.listen = function() {
+                            console.log("Called Listen()");
                         }
                         this.on = function(){};
                  },
@@ -69,6 +71,7 @@ describe(fileToTest, function(){
             id = "0a-03-12-22";
 
         var myBroker = toTest.singleton(config, logger);
+        myBroker.pingActivate = false;
         var client = new mqtt.MqttClient();
         mqtt.connect = function (url, options ) {
             assert.lengthOf(arguments, 2, "Missing Argument for Secure Connection");
@@ -94,6 +97,7 @@ describe(fileToTest, function(){
                     },
             id = "0a-03-12-22";
         var myBroker = toTest.singleton(config, logger);
+        myBroker.pingActivate = false;
         var client = new mqtt.MqttClient();
         mqtt.connect = function (url, options ) {
             assert.lengthOf(arguments, 2, "Missing Argument for Secure Connection");
@@ -118,6 +122,7 @@ describe(fileToTest, function(){
             },
             id = "0a-03-12-22";
         var myBroker = toTest.singleton(config, logger);
+        myBroker.pingActivate = false;
         var client = new mqtt.MqttClient();
         mqtt.connect = function (url, options ) {
             client.connected = false;
@@ -142,6 +147,7 @@ describe(fileToTest, function(){
             id = "0a-03-12-22";
 
         var myBroker = toTest.singleton(config, logger);
+        myBroker.pingActivate = false;
         var client = new mqtt.MqttClient();
 
         mqtt.connect = function (url, options ) {
@@ -175,6 +181,7 @@ describe(fileToTest, function(){
             },
             id = "0a-03-12-22";
         var myBroker = toTest.singleton(config, logger);
+        myBroker.pingActivate = false;
         var client = new mqtt.MqttClient();
         mqtt.connect = function (url, options ) {
             assert.lengthOf(arguments, 2, "Missing Argument for Secure Connection");
@@ -209,15 +216,14 @@ describe(fileToTest, function(){
             password: "tuPassword"
         };
         var client = new mqtt.MqttClient();
-        mqtt.createSecureClient = function (port, host, args ) {
-            assert.lengthOf(arguments, 3, "Missing Argument for Secure Connection");
-            assert.equal(port, config.port, "The port has override");
-            assert.equal(host, config.host, "The host has override");
-            assert.equal(args.username, crd.username, "The user was override");
-            assert.equal(args.password, crd.password, "The user was override");
+        mqtt.connect = function (url, options ) {
+            assert.lengthOf(arguments, 2, "Missing Argument for Secure Connection");
+            assert.equal(options.username, crd.username, "The port has override");
+            assert.equal(options.password, crd.password, "The host has override");
+            assert.equal(url, "mqtts://" + config.host + ":" + config.port)
             client.connected = true;
             return client;
-        };
+        }
 
         var myBroker = toTest.singleton(config, logger);
         myBroker.pingActivate = false;
@@ -229,7 +235,7 @@ describe(fileToTest, function(){
         };
         myBroker.connect(function(err) {
             assert.isNull(err, Error, "Invalid error reported");
-            myBroker.publish(myTopic, myMessage);
+            myBroker.publish(myTopic, myMessage, {}, done);
         });
 
 
