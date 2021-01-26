@@ -72,7 +72,7 @@ module.exports = function(grunt) {
       nyc: {
         cover: {
           options: {
-            include: ['lib/**', 'api/**'],
+            include: ['lib/**', 'api/**', 'config.js'],
             exclude: '*Tests.js',
             reporter: ['lcov', 'text-summary'],
             all: true

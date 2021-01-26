@@ -18,26 +18,27 @@
 
 "use strict";
 var config = require("../config");
-var topics_subscribe = config.topics.subscribe;
-var topics_publish = config.topics.publish;
-var { Kafka, logLevel } = require('kafkajs');
-const { Partitioners } = require('kafkajs');
-var dataSchema = require("../lib/schemas/data.json");
-var Validator = require('jsonschema').Validator;
-var validator = new Validator();
-var uuidValidate = require('uuid-validate');
-const redis = require("redis");
-var redisClient = redis.createClient({port: config.cache.port, host: config.cache.host});
-const { Sequelize } = require('sequelize');
-const { QueryTypes } = require('sequelize');
-const sequelize = new Sequelize(config.postgres.dbname, config.postgres.username, config.postgres.password, {
-  host: config.postgres.host,
-  port: config.postgres.port,
-  dialect: 'postgres'
-});
+
 
 
 module.exports = function(logger) {
+    var topics_subscribe = config.topics.subscribe;
+    var topics_publish = config.topics.publish;
+    var { Kafka, logLevel } = require('kafkajs');
+    const { Partitioners } = require('kafkajs');
+    var dataSchema = require("../lib/schemas/data.json");
+    var Validator = require('jsonschema').Validator;
+    var validator = new Validator();
+    var uuidValidate = require('uuid-validate');
+    const redis = require("redis");
+    var redisClient = redis.createClient({port: config.cache.port, host: config.cache.host});
+    const { Sequelize } = require('sequelize');
+    const { QueryTypes } = require('sequelize');
+    const sequelize = new Sequelize(config.postgres.dbname, config.postgres.username, config.postgres.password, {
+        host: config.postgres.host,
+        port: config.postgres.port,
+        dialect: 'postgres'
+    });
     var me = this;
     me.logger = logger;
     me.token = null;
