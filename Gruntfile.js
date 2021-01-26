@@ -68,11 +68,25 @@ module.exports = function(grunt) {
               },
               src: ['test/unit/*.js']
           },
+      },
+      nyc: {
+        cover: {
+          options: {
+            include: ['lib/**', 'api/**'],
+            exclude: '*Tests.js',
+            reporter: ['lcov', 'text-summary'],
+            all: true
+          },
+          cmd: false,
+          args: ['grunt', 'test']
+        }
       }
 
-		    });
+		});
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-mocha-test');
-    grunt.registerTask('default', ['jshint', 'test']);
+    grunt.loadNpmTasks('grunt-simple-nyc');
+    grunt.registerTask('default', ['jshint', 'test', 'coverage']);
     grunt.registerTask('test', ['mochaTest']);
+    grunt.registerTask( "coverage", [ "nyc" ]);
 };

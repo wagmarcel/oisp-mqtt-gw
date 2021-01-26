@@ -472,13 +472,7 @@ describe(fileToTest, function(){
             client.connected = true;
             return client;
         }
-        /*mqtt.createClient = function (port, host ) {
-            assert.lengthOf(arguments, 3, "Missing Argument for Secure Connection");
-            assert.equal(port, config.port, "The port has override");
-            assert.equal(host, config.host, "The host has override");
-            client.connected = true;
-            return client;
-        };*/
+
         client.end = function () {
             done();
         };
@@ -486,5 +480,133 @@ describe(fileToTest, function(){
             assert.isNull(err, "None error shall returned");
             myBroker.disconnect();
         });
+    });
+
+    it('Shall build path with array, non-array and no input', function(done){
+        toTest.__set__("mqtt", mqtt);
+        var config = {
+            host: "myHosttest",
+            port: 9090909,
+            secure: false,
+            retries: 2
+        };
+        var myBroker = toTest.singleton(config, logger);
+        var result = myBroker.buildPath("topic/{accountid}/test/{deviceid}", ["account", "did"]);
+        assert.equal(result, "topic/account/test/did", "Wrong path built.");
+        result = myBroker.buildPath("topic/{accountid}/test", "123.abc");
+        assert.equal(result, "topic/123.abc/test", "Wrong path built.");
+        result = myBroker.buildPath("topic/{accountid}/test", ["987.xyz"]);
+        assert.equal(result, "topic/987.xyz/test", "Wrong path built.");
+        result = myBroker.buildPath("topic/{accountid}/test", null);
+        assert.equal(result, "topic/null/test", "Wrong path built.");
+        done()
+    });
+    it('Shall attach topic and call message handler', function(done){
+        toTest.__set__("mqtt", mqtt);
+        var config = {
+            host: "myHosttest",
+            port: 9090909,
+            secure: false,
+            retries: 2
+        };
+        var myBroker = toTest.singleton(config, logger);
+        var handler = function(topic, message) {
+            assert.equal(message, "mymessage", "wrong message received");
+            assert.equal(topic, "mytopic", "wrong topic received");
+            done()}
+        myBroker.attach("mytopic", handler);
+        assert.equal(myBroker.messageHandler[0].t, "mytopic", "Wrong topic in messageHandler");
+        myBroker.onMessage("mytopic", "mymessage")
+    });
+    it('Shall attach topic, and remove it', function(done){
+        toTest.__set__("mqtt", mqtt);
+        var config = {
+            host: "myHosttest",
+            port: 9090909,
+            secure: false,
+            retries: 2
+        };
+        var myBroker = toTest.singleton(config, logger);
+        var handler = function(topic, message) {
+            done("Handler should not be called!")}
+        myBroker.attach("mytopic", handler);
+        myBroker.dettach("mytopic");
+        assert.equal(myBroker.messageHandler.length, 0, "Wrong topic in messageHandler");
+        myBroker.onMessage("mytopic", "mymessage");
+        setTimeout(function() {done()}, 500); // give it some time to fail ...
+    });
+    it('Shall bind in unconnected state initiate connection', function (done) {
+        toTest.__set__("mqtt", mqtt);
+        var config = {
+                host: "myHosttest",
+                port: 9090909,
+                secure: false,
+                retries: 2
+            },
+            id = "0a-03-12-22";
+        var realTopic = 'dev/' + id + '/act';
+        var client = new mqtt.MqttClient();
+        var crd = {
+            username: "TuUser",
+            password: "tuPassword"
+        };
+        var myBroker = toTest.singleton(config, logger);
+        myBroker.pingActivate = false;
+        mqtt.connect = function (url, options ) {
+            client.connected = true;
+            return client;
+        }
+
+        var topicPattern = 'dev/+/act' ;
+        var topicHandler = function(topic, message) {
+            assert.fail();
+        };
+
+        myBroker.setCredential(crd);
+        var callback = function() {
+            done()
+        }
+        myBroker.bind(topicPattern, topicHandler, callback);
+    });
+    it('Shall unbind and detach topic', function (done) {
+        toTest.__set__("mqtt", mqtt);
+        var config = {
+                host: "myHosttest",
+                port: 9090909,
+                secure: false,
+                retries: 2
+            },
+            id = "0a-03-12-22";
+        var realTopic = 'dev/' + id + '/act';
+        var client = new mqtt.MqttClient();
+        var crd = {
+            username: "TuUser",
+            password: "tuPassword"
+        };
+        var myBroker = toTest.singleton(config, logger);
+        myBroker.pingActivate = false;
+        mqtt.connect = function (url, options ) {
+            client.connected = true;
+            return client;
+        }
+        client.unsubscribe = function (topic, cb) {
+            cb(topic);
+        };
+        var topicPattern = 'dev/+/act' ;
+        var topicHandler = function(topic, message) {
+            assert.fail();
+        };
+
+        myBroker.setCredential(crd);
+        var callback = function() {
+            assert.equal(myBroker.messageHandler.length, 1, "topic not added from messageHandler")
+            return;
+        }
+        var finalCallback = function() {
+            assert.equal(myBroker.messageHandler.length, 0, "topic not deleted from messageHandler")
+            done();
+        }
+        myBroker.bind(topicPattern, topicHandler, callback);
+        myBroker.unbind(topicPattern, finalCallback);
     });
 });
