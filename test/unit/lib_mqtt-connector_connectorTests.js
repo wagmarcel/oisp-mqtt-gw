@@ -609,4 +609,78 @@ describe(fileToTest, function(){
         myBroker.bind(topicPattern, topicHandler, callback);
         myBroker.unbind(topicPattern, finalCallback);
     });
+    it('Shall connect in publish', function(done) {
+        toTest.__set__("mqtt", mqtt);
+        var config = {
+                host: "myHosttest",
+                port: 9090909,
+                secure: true,
+                retries: 12
+            },
+            id = "0a-03-12-22";
+        var myTopic ="/device/topox/{1}/xxxx";
+        var myMessage = {
+            a: "test",
+            b: 12323
+        };
+        var crd = {
+            username: "TuUser",
+            password: "tuPassword"
+        };
+        var client = new mqtt.MqttClient();
+        mqtt.connect = function (url, options ) {
+             client.connected = true;
+            return client;
+        }
+
+        var myBroker = toTest.singleton(config, logger);
+        myBroker.pingActivate = false;
+        myBroker.setCredential(crd);
+        client.publish = function (topic, message) {
+            assert.equal(topic, myTopic, "Missing the topics");
+            assert.equal(message, JSON.stringify(myMessage), "Missing the Message");
+            done();
+        };
+        myBroker.publish(myTopic, myMessage, {}, done);
+
+    });
+    it('Shall try connect in publish and throw error', function(done) {
+        toTest.__set__("mqtt", mqtt);
+        var config = {
+                host: "myHosttest",
+                port: 9090909,
+                secure: true,
+                retries: 12
+            },
+            id = "0a-03-12-22";
+        var myTopic ="/device/topox/{1}/xxxx";
+        var myMessage = {
+            a: "test",
+            b: 12323
+        };
+        var crd = {
+            username: "TuUser",
+            password: "tuPassword"
+        };
+        var client = new mqtt.MqttClient();
+        mqtt.connect = function (url, options ) {
+             client.connected = false;
+             throw new Error("Could not connect")
+            //return client;
+        }
+
+        var myBroker = toTest.singleton(config, logger);
+        myBroker.pingActivate = false;
+        myBroker.setCredential(crd);
+        client.publish = function (topic, message) {
+            assert.fail()
+        };
+        var callback = function(err) {
+            console.log(err)
+            assert.equal(err.message, "Connection Error", "wrong error returned");
+            done();
+        }
+        myBroker.publish(myTopic, myMessage, {}, callback);
+
+    });
 });
