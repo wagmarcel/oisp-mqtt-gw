@@ -108,7 +108,7 @@ var validate = function(value, type) {
                     return "0";
                 }
             } catch (e) {
-                return "NaB"
+                return "NaB";
             }
             return "NaB";
         }

@@ -20,11 +20,11 @@ var Broker = require("./lib/mqtt/connector"),
     ApiData = require('./api/data.ingestion'),
     config = require("./config"),
     logger = require("./lib/logger").init(config),
-    authServicce = require("./lib/authService").init(config),
+    authService = require("./lib/authService"),
     health = require('./lib/health');
 
 logger.info("OISP MQTT-gateway authorization agent");
-
+authService.init(config, logger);
 process.env.APP_ROOT = __dirname;
 
 var brokerConnector = Broker.singleton(config.broker, logger);
