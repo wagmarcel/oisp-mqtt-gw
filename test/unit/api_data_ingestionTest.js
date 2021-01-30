@@ -112,10 +112,11 @@ describe(fileToTest, function() {
             producer: function(partitioner){
                 return {
                     connect: function() {
-                        console.log("Connect!")
                     },
                     on: function() {
-                        console.log("on!!!")
+                    },
+                    send: function(payload) {
+                        done()
                     },
                     events: "event"
                 }
@@ -142,9 +143,22 @@ describe(fileToTest, function() {
     var logger = {
         error: function(){
 
+        },
+        debug: function() {
+
+        },
+        info: function() {
+
         }
     } 
 
+    var getDidAndDataType = function() {
+        return {
+            id: "id",
+            dataType: "dataType"
+        }
+    }
+    var cid = "dfcd5482-6fb5-4341-a887-b8041fe83dc2";
     it('Shall initialize data ingestion modules Kafka, Redis and Postgres', function (done) {
         toTest.__set__("Kafka", Kafka);
         toTest.__set__("redis", redis);
@@ -203,7 +217,6 @@ describe(fileToTest, function() {
 
         var sequelize = {
             query: function() {
-                console.log("query");
                 return [{
                     id: "id",
                     dataType: "dataType"
@@ -212,7 +225,7 @@ describe(fileToTest, function() {
         }
         toTest.__set__("sequelize", sequelize);
         var payload = {
-            componentId: "dfcd5482-6fb5-4341-a887-b8041fe83dc2"
+            componentId: cid
         }
         var redisClient = {
             hgetall: function(cid, cb) {
@@ -239,4 +252,60 @@ describe(fileToTest, function() {
         })
         .catch(err => done(err))
     });
+    it('Ingest data to Kafka', function (done) {
+        var Kafka = function(loglevel, brokers, clientId, requestTimeout, retry) {
+            return {
+                producer: function(partitioner){
+                    return {
+                        connect: function() {
+                        },
+                        on: function() {
+                        },
+                        send: function(payload) {
+                            message = payload.messages[0];
+                            assert.equal(message.key, "accountId." + cid, "Received Kafka payload key not correct");
+                            var value = {
+                                dataType: "String",
+                                aid: "accountId",
+                                cid:"dfcd5482-6fb5-4341-a887-b8041fe83dc2",
+                                value:"value",
+                                systemOn:1,
+                                on:1,
+                                loc:null
+                            }
+                            assert.deepEqual(JSON.parse(message.value), value, "Received Kafke message not correct")
+
+                            done()
+                            return null;
+                        },
+                        events: "event"
+                    }
+                }
+            }
+    
+        }
+        var prepareKafkaPayload = function(didAndDataType, accountId){
+            return {"dataType":"String", "aid":"accountId", "cid":cid, "value":"value", "systemOn": 1, "on": 1, "loc": null}
+        }
+        toTest.__set__("Kafka", Kafka);
+        toTest.__set__("redis", redis);
+        toTest.__set__("config", config);
+        toTest.__set__("getDidAndDataType", getDidAndDataType)
+        var dataIngestion = new toTest(logger);
+        dataIngestion.prepareKafkaPayload = prepareKafkaPayload;
+        var message = {
+            accountId: "accountId",
+            on: 1,
+            data: [
+                {
+                    "componentId": cid,
+                    "on": 1,
+                    "value": "value"
+                }
+            ]
+        };
+    
+        dataIngestion.processDataIngestion("server/metric/accountId/device", message)
+        //done();
+    });    
 });
