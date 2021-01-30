@@ -196,4 +196,47 @@ describe(fileToTest, function() {
         })
         .catch(err => done(err))
     });
+    it('Shall get did and datatype from postgres', function (done) {
+        toTest.__set__("Kafka", Kafka);
+        toTest.__set__("redis", redis);
+        toTest.__set__("config", config);
+
+        var sequelize = {
+            query: function() {
+                console.log("query");
+                return [{
+                    id: "id",
+                    dataType: "dataType"
+                }]
+            }
+        }
+        toTest.__set__("sequelize", sequelize);
+        var payload = {
+            componentId: "dfcd5482-6fb5-4341-a887-b8041fe83dc2"
+        }
+        var redisClient = {
+            hgetall: function(cid, cb) {
+                cb(null, null);
+            },
+            hmset: function(key, idKey, idValue, dataTypeKey, dataTypeValue) {
+                assert.equal(key, payload.componentId, "wrong key");
+                assert.equal(idValue, "id", "wrong id value");
+                assert.equal(idKey, "id", "wrong id key");
+                assert.equal(dataTypeValue, "dataType", "wrong datatype value");
+                assert.equal(dataTypeKey, "dataType", "wrong datatype key");
+                return 1;
+            }
+        }
+        toTest.__set__("redisClient", redisClient)
+    
+        var getDidAndDataType = toTest.__get__("getDidAndDataType");
+        
+        getDidAndDataType(payload)
+        .then((result) => {
+            assert.equal(result.id, "id", "wrong id");
+            assert.equal(result.dataType, "dataType", "wrong dataType");
+            done();
+        })
+        .catch(err => done(err))
+    });
 });

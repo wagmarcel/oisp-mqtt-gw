@@ -26,6 +26,7 @@ var sequelize;
 var me;
 var redisClient;
 var uuidValidate = require('uuid-validate');
+const { QueryTypes } = require('sequelize');
 
 var getDidAndDataType = function(item) {
     var cid = item.componentId;
@@ -76,7 +77,6 @@ module.exports = function(logger) {
     var Validator = require('jsonschema').Validator;
     var validator = new Validator();
     redisClient = redis.createClient({port: config.cache.port, host: config.cache.host});
-    const { QueryTypes } = require('sequelize');
     sequelize = new Sequelize(config.postgres.dbname, config.postgres.username, config.postgres.password, {
         host: config.postgres.host,
         port: config.postgres.port,
