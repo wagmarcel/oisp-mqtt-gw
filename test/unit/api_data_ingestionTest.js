@@ -307,5 +307,63 @@ describe(fileToTest, function() {
     
         dataIngestion.processDataIngestion("server/metric/accountId/device", message)
         //done();
-    });    
+    });
+    it('Validate data types', function (done) {
+        toTest.__set__("Kafka", Kafka);
+        toTest.__set__("redis", redis);
+        toTest.__set__("config", config);
+        toTest.__set__("getDidAndDataType", getDidAndDataType)
+
+        var validate = toTest.__get__("validate");
+        assert.isTrue(validate("string", "String"), "Error in Validation");
+        assert.isTrue(validate("1.23", "Number"), "Error in Validation");
+        assert.isTrue(validate("1", "Boolean"), "Error in Validation");
+        done();
+    });
+    it('Normalize Boolean', function (done) {
+        toTest.__set__("Kafka", Kafka);
+        toTest.__set__("redis", redis);
+        toTest.__set__("config", config);
+        toTest.__set__("getDidAndDataType", getDidAndDataType)
+
+        var normalizeBoolean = toTest.__get__("normalizeBoolean");
+        assert.equal(normalizeBoolean("true", "Boolean"), 1, "Error in Validation");
+        assert.equal(normalizeBoolean("0", "Boolean"), 0, "Error in Validation");
+        assert.equal(normalizeBoolean("fAlse", "Boolean"), 0, "Error in Validation");
+        assert.equal(normalizeBoolean(true, "Boolean"), 1, "Error in Validation");
+        assert.equal(normalizeBoolean(1, "Boolean"), 1, "Error in Validation");
+        assert.equal(normalizeBoolean("falsetrue", "Boolean"), "NaB", "Error in Validation");
+        assert.equal(normalizeBoolean(2, "Boolean"), "NaB", "Error in Validation");
+        done();
+    });
+    it('Shall prepare Kafka payload', function (done) {
+        toTest.__set__("Kafka", Kafka);
+        toTest.__set__("redis", redis);
+        toTest.__set__("config", config);
+        toTest.__set__("getDidAndDataType", getDidAndDataType)
+        var dataIngestion = new toTest(logger);
+        var didAndDataType = {
+            dataType: "String",
+            on: 1,
+            dataElement:
+                {
+                    "componentId": cid,
+                    "on": 1,
+                    "value": "value",
+                    "systemOn": 2
+                }
+        };
+    
+        var msg = dataIngestion.prepareKafkaPayload(didAndDataType, "accountId");
+        var expectedMsg = {
+            dataType: "String",
+            aid: "accountId",
+            value: "value",
+            cid: cid,
+            on: 1,
+            systemOn: 2
+        }
+        assert.deepEqual(msg, expectedMsg, "Wrong kafka payload");
+        done();
+    });
 });

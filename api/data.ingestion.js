@@ -69,6 +69,51 @@ var getDidAndDataType = function(item) {
       .catch(err => me.logger.error("Could not send message to Kafka: " + err));
 };
 
+// validate value
+var validate = function(value, type) {
+    if (type === "Number") {
+        if (isNaN(value)) {
+            return false;
+        } else {
+            return true;
+        }
+    } else if (type === "Boolean") {
+        return value === "0" || value === "1";
+    }
+    else if (type === "String") {
+        if (typeof value === "string") {
+            return true;
+        }
+        return false;
+    }
+
+};
+
+    // normalize value
+    var normalizeBoolean = function(value, type) {
+        if (type === "Boolean") {
+            // checks: true, false, 0, 1, "0", "1"
+            if (value === true || value === "1" || value === 1) {
+                return "1";
+            }
+            if (value === false || value === "0" || value === 0) {
+                return "0";
+            }
+            // checks: "trUe", "faLSE"
+            try {
+                if (value.toLowerCase() === "true") {
+                    return "1";
+                }
+                if (value.toLowerCase() === "false") {
+                    return "0";
+                }
+            } catch (e) {
+                return "NaB"
+            }
+            return "NaB";
+        }
+        return value;
+    };
 
 module.exports = function(logger) {
     var topics_subscribe = config.topics.subscribe;
@@ -229,47 +274,6 @@ module.exports = function(logger) {
         me.connectTopics();
     };
 
-    // validate value
-    var validate = function(value, type) {
-        if (type === "Number") {
-            if (isNaN(value)) {
-                return false;
-            } else {
-                return true;
-            }
-        } else if (type === "Boolean") {
-            return value === "0" || value === "1";
-        }
-        else if (type === "String") {
-            if (typeof value === "string") {
-                return true;
-            }
-            return false;
-        }
-
-    };
-
-    // normalize value
-    var normalizeBoolean = function(value, type) {
-        if (type === "Boolean") {
-            // checks: "trUe", "faLSE"
-            if (value.toLowerCase() === "true") {
-                return "1";
-            }
-            if (value.toLowerCase() === "false") {
-                return "0";
-            }
-            // checks: true, false, 0, 1, "0", "1"
-            if (value === true || value === "1" || value === 1) {
-                return "1";
-            }
-            if (value === false || value === "0" || value === 0) {
-                return "0";
-            }
-            return "NaB";
-        }
-        return value;
-    };
 
     /**
      * Prepare datapoint from frontend data structure to Kafka like the following example:
