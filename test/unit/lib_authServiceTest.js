@@ -33,15 +33,24 @@ describe(fileToTest, function(){
             var response = {
                 statusCode: 200
             }
-            if (callback(null, response)) {
-                done()
-            } else {
-                done("Incorrect validation result")
-            };
+            callback(null, response);
         }
         toTest.__set__("request",request);
+        var me = {
+            logger: {
+                debug: function() {}
+            }
+        }
+        toTest.__set__("me", me);
         var validateToken = toTest.__get__("validateToken");
-        validateToken("keycloakurl", "1234", "realm", "token");
+        validateToken("http://keycloakurl:1234/auth", "realm", "token")
+        .then((result) => {
+            if (result) {
+                done();
+            } else {
+                done("Wrong validation result");
+            }
+        });
     })
     it('Shall send unsuccessful request to validate token', function(done){
         var request = function(options, callback) {
@@ -51,15 +60,24 @@ describe(fileToTest, function(){
             var response = {
                 statusCode: 400
             }
-            if (!callback(null, response)) {
-                done()
-            } else {
-                done("Incorrect validation result")
-            };
+            callback(null, response);
         }
         toTest.__set__("request",request);
+        var me = {
+            logger: {
+                debug: function() {}
+            }
+        }
+        toTest.__set__("me", me);
         var validateToken = toTest.__get__("validateToken");
-        validateToken("keycloakurl", "1234", "realm", "token");
+        validateToken("http://keycloakurl:1234/auth", "realm", "token")
+        .then((result) => {
+            if (!result) {
+                done();
+            } else {
+                done("Wrong validation result");
+            }
+        });
     })
     it('Shall throw error while validating token', function(done){
         var request = function(options, callback) {
@@ -69,16 +87,21 @@ describe(fileToTest, function(){
             var response = {
                 statusCode: 400
             }
-            try {
-                callback("Error", null);
-            } catch (e) {
-                assert.equal(e.message, "Error", "Wrong error thrown");
-                done()
-            }
+            callback("Error", null);
         }
         toTest.__set__("request",request);
+        var me = {
+            logger: {
+                debug: function() {}
+            }
+        }
+        toTest.__set__("me", me);
         var validateToken = toTest.__get__("validateToken");
-        validateToken("keycloakurl", "1234", "realm", "token");
+        validateToken("http://keycloakurl:1234/auth", "realm", "token")
+        .catch((e) => {
+            assert.equal(e.message, "Error", "Wrong error thrown");
+            done()
+        });
     })
     /*it('Shall check url parameters to check username/password', function(done){
         var config = {};

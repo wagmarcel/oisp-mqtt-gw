@@ -54,8 +54,8 @@ var config = {
     "authService": {
         "port": parsedConfig.authServicePort,
         "auth-server-port": parsedConfig.keycloakConfig.listenerPort,
-        "auth-server-url": parsedConfig.keycloakConfig.listenerPort,
-        "realm": parsedConfig.mqttBrokerPassword
+        "auth-server-url": parsedConfig.keycloakConfig["auth-server-url"],
+        "realm": parsedConfig.keycloakConfig.realm
     },
     "cache": {
         "host": parsedConfig.redisConf.hostname,
