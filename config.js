@@ -52,7 +52,10 @@ var config = {
         "password": parsedConfig.mqttBrokerPassword
     },
     "authService": {
-        "port": parsedConfig.authServicePort
+        "port": parsedConfig.authServicePort,
+        "auth-server-port": parsedConfig.keycloakConfig.listenerPort,
+        "auth-server-url": parsedConfig.keycloakConfig.listenerPort,
+        "realm": parsedConfig.mqttBrokerPassword
     },
     "cache": {
         "host": parsedConfig.redisConf.hostname,
