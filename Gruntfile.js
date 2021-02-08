@@ -40,7 +40,7 @@ module.exports = function(grunt) {
             "browser": true,
             "unused": true,
             "node": true,
-            "esversion": 6,
+            "esversion": 8,
             "globals": {
                 "angular": true,
                 "confirm": true,

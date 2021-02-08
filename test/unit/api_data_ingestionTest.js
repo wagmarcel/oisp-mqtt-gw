@@ -20,6 +20,10 @@ var fileToTest = "../../api/data.ingestion.js";
 
 describe(fileToTest, function() {
 
+    process.env.OISP_KEYCLOAK_CONFIG = '{\
+        "listenerPort": 4080, \
+        "auth-server-url": "keycloak" \
+    }'
     process.env.OISP_KAFKA_CONFIG = '{\
         "uri": "uri", \
         "partitions": 1, \
@@ -44,6 +48,7 @@ describe(fileToTest, function() {
         "redisConf": "@@OISP_REDIS_CONFIG", \
         "kafkaConfig": "@@OISP_KAFKA_CONFIG", \
         "postgresConfig": "@@OISP_POSTGRES_CONFIG", \
+        "keycloakConfig": "@@OISP_KEYCLOAK_CONFIG", \
         "aesKey": "/app/keys/mqtt/mqtt_gw_secret.key" \
     }';
 

@@ -8,15 +8,13 @@ RUN addgroup -g 1001 appuser && \
 
 WORKDIR /app
 
-RUN ls
-
 RUN chmod 777 setup-analytics-gateway.sh
 
 RUN npm install forever node-cache
 
-RUN npm install --production
+RUN npm install --production && npm install -g grunt-cli && grunt
 
-RUN chmod 777 start-analytics-gateway.sh wait-for-it.sh
+RUN chmod 777 start-mqtt-kafka-bridge.sh wait-for-it.sh
 
 USER appuser
 ENTRYPOINT ["/bin/sh","start-mqtt-kafka-bridge.sh"]
