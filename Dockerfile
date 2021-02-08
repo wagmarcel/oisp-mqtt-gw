@@ -19,4 +19,4 @@ RUN npm install --production
 RUN chmod 777 start-analytics-gateway.sh wait-for-it.sh
 
 USER appuser
-ENTRYPOINT ["/bin/sh","start-analytics-gateway.sh"]
+ENTRYPOINT ["/bin/sh","start-mqtt-kafka-bridge.sh"]
