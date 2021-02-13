@@ -202,26 +202,166 @@ describe(fileToTest, function(){
         me.cache = cache;
         authenticate.authenticate(req, res)
     });
-    /*it('Shall check url parameters to check username/password', function(done){
-        var config = {};
-        var logger = {
-            debug: function() {
-
-            }
+    it('Authentication shall detect wrong deviceId in username', function(done){
+        var decodedToken = {
+            sub: "deviceId", 
+            accounts: [{
+                role: "device",
+                id: "accountId"
+            }]
         };
-        authenticate = new toTest(config, logger);
-        var req = {
-            params: {
+        var verifier = function(token) {
+            return decodedToken;
+        }
+        toTest.__set__("verifier",verifier);
+        var config = {
+            broker: {
                 username: "username",
                 password: "password"
+            }   
+        }
+        var logger = {
+            debug: function() {},
+            info: function() {}
+        }
+        var req = {
+            query: {
+                username: "wrongDeviceId",
+                password: "token" 
             }
-        };
+        }
         var res = {
             sendStatus: function(status) {
-                assert.equal(status, 200, "Wrong status");
-                done()
+                assert.equal(status, 400, "Received wrong status");
+                done();
             }
+        }
+        var cache = {
+            setValue: function(key, type, value) {
+                assert.equal(key, "accountId/deviceId", "Wrong cache value received.");
+                assert.equal(type, "acl", "Wrong cache value received.");
+                assert.equal(value, true, "Wrong cache value received.");
+            }
+        }
+        var me = {
+            logger: logger,
+            config: config,
+            public_key: "publicKey",
+            cache: cache
+        }
+        var authenticate = new toTest(config, logger);
+        var me = toTest.__get__("me", me);
+        me.public_key = "publicKey";
+        me.cache = cache;
+        authenticate.authenticate(req, res)
+    });
+    it('Authentication shall detect wrong role in token', function(done){
+        var decodedToken = {
+            sub: "deviceId", 
+            accounts: [{
+                role: "wrontRole",
+                id: "accountId"
+            }]
         };
-        authenticate.authenticate(req, res);
-    });*/
+        var verifier = function(token) {
+            return decodedToken;
+        }
+        toTest.__set__("verifier",verifier);
+        var config = {
+            broker: {
+                username: "username",
+                password: "password"
+            }   
+        }
+        var logger = {
+            debug: function() {},
+            info: function() {}
+        }
+        var req = {
+            query: {
+                username: "deviceId",
+                password: "token" 
+            }
+        }
+        var res = {
+            sendStatus: function(status) {
+                assert.equal(status, 400, "Received wrong status");
+                done();
+            }
+        }
+        var cache = {
+            setValue: function(key, type, value) {
+                assert.equal(key, "accountId/deviceId", "Wrong cache value received.");
+                assert.equal(type, "acl", "Wrong cache value received.");
+                assert.equal(value, true, "Wrong cache value received.");
+            }
+        }
+        var me = {
+            logger: logger,
+            config: config,
+            public_key: "publicKey",
+            cache: cache
+        }
+        var authenticate = new toTest(config, logger);
+        var me = toTest.__get__("me", me);
+        me.public_key = "publicKey";
+        me.cache = cache;
+        authenticate.authenticate(req, res)
+    });
+    it('Authentication shall detect wrong account array', function(done){
+        var decodedToken = {
+            sub: "deviceId", 
+            accounts: [{
+                role: "device",
+                id: "accountId"
+            }, {
+               role: "device",
+               id: "accountId2" 
+            }]
+        };
+        var verifier = function(token) {
+            return decodedToken;
+        }
+        toTest.__set__("verifier",verifier);
+        var config = {
+            broker: {
+                username: "username",
+                password: "password"
+            }   
+        }
+        var logger = {
+            debug: function() {},
+            info: function() {}
+        }
+        var req = {
+            query: {
+                username: "deviceId",
+                password: "token" 
+            }
+        }
+        var res = {
+            sendStatus: function(status) {
+                assert.equal(status, 400, "Received wrong status");
+                done();
+            }
+        }
+        var cache = {
+            setValue: function(key, type, value) {
+                assert.equal(key, "accountId/deviceId", "Wrong cache value received.");
+                assert.equal(type, "acl", "Wrong cache value received.");
+                assert.equal(value, true, "Wrong cache value received.");
+            }
+        }
+        var me = {
+            logger: logger,
+            config: config,
+            public_key: "publicKey",
+            cache: cache
+        }
+        var authenticate = new toTest(config, logger);
+        var me = toTest.__get__("me", me);
+        me.public_key = "publicKey";
+        me.cache = cache;
+        authenticate.authenticate(req, res)
+    });
 });
