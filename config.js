@@ -78,7 +78,7 @@ var config = {
     },
     "topics": {
         "subscribe": {
-            "data_ingestion": "$share/bridge/server/metric/+/+",
+            "data_ingestion": "$share/bridge//server/metric/+/+",
             "health": "server/devices/+/health"
         },
         "publish": {

@@ -130,21 +130,6 @@ describe(fileToTest, function() {
 
     }
     
-    var redis = {
-        createClient: function(port, host) {
-            return {
-                on: function(event, callback) {
-
-                }
-            }
-        }
-        
-    }
-
-    var Sequelize = function(){
-        return {
-        }
-    }
     var logger = {
         error: function(){
 
@@ -157,6 +142,18 @@ describe(fileToTest, function() {
         }
     } 
 
+    class CacheFactory {
+        constructor(config, logger) {
+
+        }
+        getInstance() {
+            return {
+                getDidAndDataType: function() {
+
+                }
+            }
+        }
+    }
     var getDidAndDataType = function() {
         return {
             id: "id",
@@ -164,99 +161,14 @@ describe(fileToTest, function() {
         }
     }
     var cid = "dfcd5482-6fb5-4341-a887-b8041fe83dc2";
-    it('Shall initialize data ingestion modules Kafka, Redis and Postgres', function (done) {
+    it('Shall initialize data ingestion modules Kafka and Cache', function (done) {
         toTest.__set__("Kafka", Kafka);
-        toTest.__set__("redis", redis);
+        toTest.__set__("CacheFactory", CacheFactory);
         toTest.__set__("config", config);
         var dataIngestion = new toTest(logger);
         done();
     });
-    it('Shall get did and datatype from redis', function (done) {
-        toTest.__set__("Kafka", Kafka);
-        toTest.__set__("redis", redis);
-        toTest.__set__("config", config);
 
-        var sequelize = {
-            query: function() {
-                console.log("query");
-            }
-        }
-        toTest.__set__("sequelize", sequelize);
-        var payload = {
-            componentId: "dfcd5482-6fb5-4341-a887-b8041fe83dc2"
-        }
-        var redisClient = {
-            hgetall: function(cid, cb) {
-                cb(null, {
-                    id: "id",
-                    dataType: "dataType"
-                });
-            },
-            hmset: function(key, idKey, idValue, dataTypeKey, dataTypeValue) {
-                assert.equal(key, payload.componentId, "wrong key");
-                assert.equal(idValue, "id", "wrong id value");
-                assert.equal(idKey, "id", "wrong id key");
-                assert.equal(dataTypeValue, "dataType", "wrong datatype value");
-                assert.equal(dataTypeKey, "dataType", "wrong datatype key");
-                return 1;
-            }
-        }
-        toTest.__set__("redisClient", redisClient)
-    
-        var getDidAndDataType = toTest.__get__("getDidAndDataType");
-        
-        //var dataIngestion = new toTest(logger);
-
-        getDidAndDataType(payload)
-        .then((result) => {
-            assert.equal(result.id, "id", "wrong id");
-            assert.equal(result.dataType, "dataType", "wrong dataType");
-            done();
-        })
-        .catch(err => done(err))
-    });
-    it('Shall get did and datatype from postgres', function (done) {
-        toTest.__set__("Kafka", Kafka);
-        toTest.__set__("redis", redis);
-        toTest.__set__("config", config);
-
-        var sequelize = {
-            query: function() {
-                return [{
-                    id: "id",
-                    dataType: "dataType"
-                }]
-            }
-        }
-        toTest.__set__("sequelize", sequelize);
-        var payload = {
-            componentId: cid
-        }
-        var redisClient = {
-            hgetall: function(cid, cb) {
-                cb(null, null);
-            },
-            hmset: function(key, idKey, idValue, dataTypeKey, dataTypeValue) {
-                assert.equal(key, payload.componentId, "wrong key");
-                assert.equal(idValue, "id", "wrong id value");
-                assert.equal(idKey, "id", "wrong id key");
-                assert.equal(dataTypeValue, "dataType", "wrong datatype value");
-                assert.equal(dataTypeKey, "dataType", "wrong datatype key");
-                return 1;
-            }
-        }
-        toTest.__set__("redisClient", redisClient)
-    
-        var getDidAndDataType = toTest.__get__("getDidAndDataType");
-        
-        getDidAndDataType(payload)
-        .then((result) => {
-            assert.equal(result.id, "id", "wrong id");
-            assert.equal(result.dataType, "dataType", "wrong dataType");
-            done();
-        })
-        .catch(err => done(err))
-    });
     it('Ingest data to Kafka', function (done) {
         var Kafka = function(loglevel, brokers, clientId, requestTimeout, retry) {
             return {
@@ -293,9 +205,8 @@ describe(fileToTest, function() {
             return {"dataType":"String", "aid":"accountId", "cid":cid, "value":"value", "systemOn": 1, "on": 1, "loc": null}
         }
         toTest.__set__("Kafka", Kafka);
-        toTest.__set__("redis", redis);
         toTest.__set__("config", config);
-        toTest.__set__("getDidAndDataType", getDidAndDataType)
+        toTest.__set__("CacheFactory", CacheFactory);
         var dataIngestion = new toTest(logger);
         dataIngestion.prepareKafkaPayload = prepareKafkaPayload;
         var message = {
@@ -315,9 +226,8 @@ describe(fileToTest, function() {
     });
     it('Validate data types', function (done) {
         toTest.__set__("Kafka", Kafka);
-        toTest.__set__("redis", redis);
+        toTest.__set__("CacheFactory", CacheFactory);
         toTest.__set__("config", config);
-        toTest.__set__("getDidAndDataType", getDidAndDataType)
 
         var validate = toTest.__get__("validate");
         assert.isTrue(validate("string", "String"), "Error in Validation");
@@ -327,9 +237,8 @@ describe(fileToTest, function() {
     });
     it('Normalize Boolean', function (done) {
         toTest.__set__("Kafka", Kafka);
-        toTest.__set__("redis", redis);
+        toTest.__set__("CacheFactory", CacheFactory);
         toTest.__set__("config", config);
-        toTest.__set__("getDidAndDataType", getDidAndDataType)
 
         var normalizeBoolean = toTest.__get__("normalizeBoolean");
         assert.equal(normalizeBoolean("true", "Boolean"), 1, "Error in Validation");
@@ -343,9 +252,8 @@ describe(fileToTest, function() {
     });
     it('Shall prepare Kafka payload', function (done) {
         toTest.__set__("Kafka", Kafka);
-        toTest.__set__("redis", redis);
+        toTest.__set__("CacheFactory", CacheFactory);
         toTest.__set__("config", config);
-        toTest.__set__("getDidAndDataType", getDidAndDataType)
         var dataIngestion = new toTest(logger);
         var didAndDataType = {
             dataType: "String",

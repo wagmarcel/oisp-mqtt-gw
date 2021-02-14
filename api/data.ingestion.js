@@ -20,54 +20,10 @@
 var config = require("../config");
 var { Kafka, logLevel } = require('kafkajs');
 const { Partitioners } = require('kafkajs');
-const redis = require("redis");
-const { Sequelize } = require('sequelize');
-var sequelize;
 var me;
-var redisClient;
-var uuidValidate = require('uuid-validate');
-const { QueryTypes } = require('sequelize');
 
-var getDidAndDataType = function(item) {
-    var cid = item.componentId;
-    return new Promise((resolve, reject) => {
-        //check whether cid = uuid
-        if (!uuidValidate(cid)) {
-            reject("cid not UUID. Rejected!");
-        }
-        redisClient.hgetall(cid, function(err, value) {
-            if (err) {
-                throw err;
-            } else {
-              resolve(value);
-            }
-        });
-    })
-    .then( (value) => {
-          if (value === null || (Array.isArray(value) && value.length === 1 && value[0] === null)) {
-              // no cached value found => make db lookup and store in cache
-              var sqlquery='SELECT devices.id,"dataType" FROM dashboard.device_components,dashboard.devices,dashboard.component_types WHERE "componentId"::text=\'' + cid + '\' and "deviceUID"::text=devices.uid::text and device_components."componentTypeId"::text=component_types.id::text';
-               return sequelize.query(sqlquery, { type: QueryTypes.SELECT });
-          } else {
-              return [value];
-          }
-      })
-      .then((didAndDataType) => new Promise((resolve, reject) => {
-          if (didAndDataType === undefined || didAndDataType === null) {
-              reject("DB lookup failed!");
-              return;
-          }
-          var redisResult = redisClient.hmset(cid, "id", didAndDataType[0].id, "dataType", didAndDataType[0].dataType);
-          didAndDataType[0].dataElement = item;
-          if (redisResult) {
-              resolve(didAndDataType[0]);
-          } else {
-              me.logger.warn("Could not store db value in redis. This will significantly reduce performance");
-              resolve(didAndDataType[0]);
-          }
-      }))
-      .catch(err => me.logger.error("Could not send message to Kafka: " + err));
-};
+const CacheFactory = require("../lib/cache");
+
 
 // validate value
 var validate = function(value, type) {
@@ -121,14 +77,11 @@ module.exports = function(logger) {
     var dataSchema = require("../lib/schemas/data.json");
     var Validator = require('jsonschema').Validator;
     var validator = new Validator();
-    redisClient = redis.createClient({port: config.cache.port, host: config.cache.host});
-    sequelize = new Sequelize(config.postgres.dbname, config.postgres.username, config.postgres.password, {
-        host: config.postgres.host,
-        port: config.postgres.port,
-        dialect: 'postgres'
-    });
+    var cache = new CacheFactory(config, logger).getInstance();
+    
     me = this;
     me.logger = logger;
+    me.cache = cache;
     me.token = null;
 
     var kafkaProducer;
@@ -156,16 +109,6 @@ module.exports = function(logger) {
           logger.error("Exception occured while creating Kafka Producer: " + e);
       }
 
-    redisClient.on("error", function(err) {
-      me.logger.info("Error in Redis client: " + err);
-    });
-
-    try {
-      sequelize.authenticate();
-      console.log('DB connection has been established.');
-    } catch (error) {
-      console.error('Unable to connect to DB:', error);
-    }
 
     me.getToken = function (did) {
         /*jshint unused:false*/
@@ -210,7 +153,7 @@ module.exports = function(logger) {
             // Also retrieve dataType
             var promarray = [];
             bodyMessage.data.forEach(item => {
-                var value = getDidAndDataType(item);
+                var value = me.cache.getDidAndDataType(item);
                 promarray.push(value);
               }
             );
