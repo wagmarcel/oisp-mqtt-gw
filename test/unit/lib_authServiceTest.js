@@ -94,8 +94,23 @@ describe(fileToTest, function(){
             broker: {
                 username: "username",
                 password: "password"
-            }   
+            },
+            cache: {
+                port: 1432,
+                host: "cacheHost"
+            } 
         }
+        var CacheFactory = class {
+            constructor() {
+
+            }
+            getInstance(){
+                return class {
+                    
+                }
+            }
+        }
+        toTest.__set__("CacheFactory", CacheFactory)
         var logger = {
             debug: function() {},
             info: function() {}

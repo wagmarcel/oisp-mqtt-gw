@@ -18,6 +18,7 @@
 var assert =  require('chai').assert,
     sinon = require('sinon'),
     rewire = require('rewire');
+var expect = require('chai').expect;
 
 
 var fileToTest = "../../lib/cache/index.js";
@@ -53,7 +54,9 @@ describe(fileToTest, function(){
         var Sequelize = class Sequelize {
             constructor(dbname, username, password, options) {
             }
-            authenticate(){}
+            authenticate(){
+                return Promise.resolve();
+            }
         }
         toTest.__set__("redis", redis);
         toTest.__set__("Sequelize", Sequelize);
@@ -83,6 +86,7 @@ describe(fileToTest, function(){
     });
     it('Shall retrieve did and dataType from redisCache', function(done){
         toTest = rewire(fileToTest); // to reset the singleton
+        cid = "895cac7d-49d1-4650-9b63-a6c7c0c9c4c7";
         var config = {
             cache: {
                 port: 1234,
@@ -110,14 +114,22 @@ describe(fileToTest, function(){
                     hgetall: function(key, callback) {
                         callback(null, redisValue)
                     },
-                    on: function(){}
+                    on: function(){},
+                    hmset: function(key, valueType, value, callback){
+                        assert.equal(key, cid, "wrong key received");
+                        expect(valueType).to.be.oneOf(["id", "dataType"])
+                        expect(value).to.be.oneOf(["did", "dataType"])
+                        callback(null, true);
+                    }
                 }
             }
         }
         var Sequelize = class Sequelize {
             constructor(dbname, username, password, options) {
             }
-            authenticate(){}
+            authenticate(){
+                return Promise.resolve();
+            }
         }
         toTest.__set__("redis", redis);
         toTest.__set__("Sequelize", Sequelize);
@@ -125,7 +137,7 @@ describe(fileToTest, function(){
         var cache = CacheFactory.getInstance();
         cache.getDidAndDataType({componentId: "895cac7d-49d1-4650-9b63-a6c7c0c9c4c7"})
         .then((result) => {
-            assert.deepEqual(result, [redisValue], "Wrong redis value received")
+            assert.deepEqual(result, redisValue, "Wrong redis value received")
             done()
         })
         .catch((e) => done(e))
