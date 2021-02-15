@@ -45,11 +45,15 @@ describe(fileToTest, function(){
         }
         var redis = {
             createClient: function(port, host) {
+                return {
+                    on: function(){}
+                }
             }
         }
         var Sequelize = class Sequelize {
             constructor(dbname, username, password, options) {
             }
+            authenticate(){}
         }
         toTest.__set__("redis", redis);
         toTest.__set__("Sequelize", Sequelize);
@@ -105,13 +109,15 @@ describe(fileToTest, function(){
                 return {
                     hgetall: function(key, callback) {
                         callback(null, redisValue)
-                    }
+                    },
+                    on: function(){}
                 }
             }
         }
         var Sequelize = class Sequelize {
             constructor(dbname, username, password, options) {
             }
+            authenticate(){}
         }
         toTest.__set__("redis", redis);
         toTest.__set__("Sequelize", Sequelize);

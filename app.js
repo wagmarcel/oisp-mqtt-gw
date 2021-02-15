@@ -27,6 +27,7 @@ logger.info("OISP MQTT-gateway authorization agent");
 authService.init(config, logger);
 process.env.APP_ROOT = __dirname;
 
+logger.info("OISP MQTT-Kafka bridge");
 var brokerConnector = Broker.singleton(config.broker, logger);
 brokerConnector.connect(function(err) {
     if (!err) {

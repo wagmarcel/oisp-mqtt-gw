@@ -139,15 +139,9 @@ module.exports = function(logger) {
         if (!validator.validate(bodyMessage, dataSchema["POST"])) {
             me.logger.info("Schema rejected message! Message will be discarded: " + bodyMessage);
         } else {
-          //Check: Does accountid fit to topic?
+            //Get accountId
             var match = topic.match(/server\/metric\/([^\/]*)\/(.*)/);
             accountId = match[1];
-            did = match[2];
-
-            if (bodyMessage.accountId !== match[1]) {
-                me.logger.info("AccountId in message does not fit to topic! Message will be discarded: " + bodyMessage);
-                return;
-            }
 
             // Go through data and check whether cid is correct
             // Also retrieve dataType

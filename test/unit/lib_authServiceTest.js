@@ -371,12 +371,17 @@ fileToTest = "../../lib/authService/acl.js";
 describe(fileToTest, function(){
     var toTest = rewire(fileToTest);
     it('Shall give access control to superuser', function(done){
-        var Cache = class Acl {
-            constructor(){
-
+        class CacheFactory {
+            constructor(config, logger) {
+            }
+            getInstance() {
+                return {
+                    getDidAndDataType: function() {
+                    }
+                }
             }
         }
-        toTest.__set__("Cache", Cache);
+        toTest.__set__("CacheFactory", CacheFactory);
         var config = {
             broker: {
                 username: "superuser",
@@ -403,18 +408,26 @@ describe(fileToTest, function(){
         acl.acl(req, res);
     })
     it('Shall give access control to device', function(done){
-        var aidSlashDid = "accountId/deviceId"
         var Cache = class Acl {
             constructor(){
 
             }
             getValue(subtopic, key) {
                 assert.equal(aidSlashDid, subtopic, "Wrong accountId/did subtopic");
-                assert.equal(key, "did", "Wrong key value");
+                assert.equal(key, "acl", "Wrong key value");
                 return true;
             }
         }
-        toTest.__set__("Cache", Cache);
+        class CacheFactory {
+            constructor(config, logger) {
+            }
+            getInstance() {
+                return new Cache();
+            }
+        }
+        var aidSlashDid = "accountId/deviceId"
+
+        toTest.__set__("CacheFactory", CacheFactory);
         var config = {
             broker: {
                 username: "username",
@@ -451,7 +464,14 @@ describe(fileToTest, function(){
                 return false;
             }
         }
-        toTest.__set__("Cache", Cache);
+        class CacheFactory {
+            constructor(config, logger) {
+            }
+            getInstance() {
+                return new Cache();
+            }
+        }
+        toTest.__set__("CacheFactory", CacheFactory);
         var config = {
             broker: {
                 username: "username",
