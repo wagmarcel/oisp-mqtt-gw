@@ -28,7 +28,7 @@ const CacheFactory = require("../lib/cache");
 // Round Robin partitioner used to handle single clients with
 // too high throughput
 // TODO: Make it configurable
-const MyRRPartitioner = () => {
+/*const MyRRPartitioner = () => {
     var curPartition = 0;
     return ({ partitionMetadata}) => {
         var numPartitions = partitionMetadata.length;
@@ -36,7 +36,7 @@ const MyRRPartitioner = () => {
         curPartition++;
         return partition;
     };
-};
+};*/
 
 // validate value
 var validate = function(value, type) {
@@ -106,7 +106,7 @@ class KafkaAggregator {
             const { CONNECT, DISCONNECT } = this.kafkaProducer.events;
             this.kafkaProducer.on(DISCONNECT, e => {
                 console.log(`Metric producer disconnected!: ${e.timestamp}`);
-                kafkaProducer.connect();
+                this.kafkaProducer.connect();
             });
             this.kafkaProducer.on(CONNECT, e => logger.debug("Kafka metric producer connected: " + e));
             this.kafkaProducer.connect();
@@ -159,7 +159,7 @@ module.exports = function(logger) {
 
     me.stopAggregator = function() {
         me.kafkaAggregator.stop();
-    }
+    };
 
     me.getToken = function (did) {
         /*jshint unused:false*/

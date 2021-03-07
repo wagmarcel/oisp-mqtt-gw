@@ -144,7 +144,7 @@ describe(fileToTest, function() {
         start(){}
         stop(){}
         addMessage(){}
-    };
+    }
 
     class CacheFactory {
         constructor() {
@@ -210,7 +210,7 @@ describe(fileToTest, function() {
         ToTest.__set__("Kafka", Kafka);
         ToTest.__set__("config", config);
         ToTest.__set__("CacheFactory", CacheFactory);
-        ToTest.__set__("KafkaAggregator", origKafkaAggregator)
+        ToTest.__set__("KafkaAggregator", origKafkaAggregator);
 
         var dataIngestion = new ToTest(logger);
         var me = ToTest.__get__("me");
